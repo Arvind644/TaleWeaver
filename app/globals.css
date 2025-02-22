@@ -25,3 +25,17 @@ body {
     text-wrap: balance;
   }
 }
+
+@keyframes fadeTransition {
+  0% { opacity: 1; }
+  50% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+.scene-transition {
+  animation: fadeTransition 1s ease-in-out;
+}
+
+.scene-transition * {
+  pointer-events: none;
+}
