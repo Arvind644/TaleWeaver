@@ -1,0 +1,62 @@
+// This is your Prisma schema file
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(cuid())
+  clerkId       String         @unique
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  gameStates    GameState[]
+  preferences   UserPreference?
+}
+
+model UserPreference {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id])
+  voiceSettings Json?    // Store voice preferences
+  themeSettings String?  // Store UI preferences
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model GameState {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  currentScene  String
+  storyProgress Json     // Store story state as JSON
+  choices       Json     // Store player choices
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model StoryTemplate {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  scenes      Scene[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Scene {
+  id              String        @id @default(cuid())
+  storyTemplateId String
+  storyTemplate   StoryTemplate @relation(fields: [storyTemplateId], references: [id])
+  description     String
+  dialogue        Json          // Store possible dialogues
+  choices         Json          // Store possible choices
+  nextScenes      Json          // Store scene connections
+  imagePrompt     String?       // Store image generation prompt
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+} 
