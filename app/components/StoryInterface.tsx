@@ -1,109 +1,193 @@
 'use client'
 
-import { useState } from 'react'
-import { StoryNode, storyNodes } from '@/lib/story-data'
+import { useState, useEffect } from 'react'
 import { VoiceService } from '@/lib/voice-service'
+import { StoryGenerationService } from '@/lib/story-generation-service'
 import VoiceInput from './VoiceInput'
 
-export default function StoryInterface() {
-  const [currentNode, setCurrentNode] = useState<StoryNode>(storyNodes.start)
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [voiceService] = useState(() => {
-    const apiKey = process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY
-    console.log('API Key available:', !!apiKey) // Debug log - will only show if key exists
-    return new VoiceService({
-      apiKey: apiKey || '',
-      voiceId: '21m00Tcm4TlvDq8ikWAM'
-    })
-  })
+const INITIAL_SCENE = {
+  narration: "Welcome to an enchanted realm where magic and mystery intertwine.",
+  dialog: "Welcome to your adventure! What would you like to do?",
+  sceneDescription: "You stand at the beginning of your journey, where multiple paths await your choice.",
+  choices: [
+    {
+      text: "Enter the enchanted forest",
+      consequence: "The forest holds many secrets",
+      voiceId: "21m00Tcm4TlvDq8ikWAM"
+    },
+    {
+      text: "Visit the ancient temple",
+      consequence: "Ancient wisdom awaits",
+      voiceId: "AZnzlk1XvdvUeBnXmlld"
+    },
+    {
+      text: "Meet the village elder",
+      consequence: "Guidance from the wise",
+      voiceId: "EXAVITQu4vr4xnSDxMaL"
+    }
+  ]
+}
 
-  const progressStory = async (choice: string) => {
+const MAX_STEPS = 10 // Maximum story steps
+
+export default function StoryInterface() {
+  const [currentScene, setCurrentScene] = useState(INITIAL_SCENE)
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [previousChoices, setPreviousChoices] = useState<string[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [stepCount, setStepCount] = useState(0)
+  const [selectedVoice, setSelectedVoice] = useState('21m00Tcm4TlvDq8ikWAM')
+  const [availableVoices, setAvailableVoices] = useState<any[]>([])
+
+  const [voiceService] = useState(() => new VoiceService({
+    apiKey: process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || '',
+    voiceId: '21m00Tcm4TlvDq8ikWAM'
+  }))
+
+  const [storyService] = useState(() => new StoryGenerationService(
+    process.env.NEXT_PUBLIC_MISTRAL_API_KEY || ''
+  ))
+
+  // Initialize with static scene, then let AI take over for subsequent scenes
+  useEffect(() => {
+    const initializeStory = async () => {
+      try {
+        // Start with narrating the initial scene
+        await voiceService.synthesizeSpeech(INITIAL_SCENE.narration)
+      } catch (error) {
+        console.error('Failed to initialize story:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    initializeStory()
+  }, [])
+
+  useEffect(() => {
+    // Load available voices
+    const loadVoices = async () => {
+      const voices = voiceService.getAvailableCharacterVoices()
+      setAvailableVoices(voices)
+    }
+    loadVoices()
+  }, [])
+
+  const handleChoice = async (choice: string) => {
+    if (isProcessing || stepCount >= MAX_STEPS) return
     setIsProcessing(true)
+
     try {
-      const matchedChoice = currentNode.choices.find(c => 
-        c.text.toLowerCase() === choice.toLowerCase()
+      const chosenOption = currentScene.choices.find(
+        (c: any) => c.text.toLowerCase() === choice.toLowerCase()
       )
 
-      if (matchedChoice) {
-        console.log('Processing choice:', matchedChoice)
+      if (chosenOption) {
+        await voiceService.synthesizeSpeech(
+          `You chose: ${chosenOption.text}`, 
+          selectedVoice // Use selected voice
+        )
 
-        try {
-          // Get next story node
-          const nextNode = storyNodes[matchedChoice.nextNode]
-          
-          // Play confirmation and narration with appropriate voices
-          await voiceService.synthesizeSpeech(`You chose: ${matchedChoice.text}`, '21m00Tcm4TlvDq8ikWAM')
-          
-          // Switch voice and narrate the new scene
-          if (matchedChoice.voiceId) {
-            await voiceService.synthesizeSpeech(nextNode.narration, matchedChoice.voiceId)
-          }
-          
-          // Update the current node
-          setCurrentNode(nextNode)
-        } catch (error) {
-          console.error('Voice synthesis error:', error)
-          // Continue with story even if voice fails
-          setCurrentNode(storyNodes[matchedChoice.nextNode])
-        }
+        setStepCount(prev => prev + 1)
+        // Now let AI generate the next scene
+        const nextScene = await storyService.generateNextScene({
+          currentScene: chosenOption.text,
+          playerChoices: currentScene.choices.map((c: any) => c.text),
+          previousChoices: [...previousChoices, chosenOption.text]
+        })
+
+        // Narrate new scene
+        await voiceService.synthesizeSpeech(
+          nextScene.narration,
+          chosenOption.voiceId
+        )
+
+        setPreviousChoices(prev => [...prev, chosenOption.text])
+        setCurrentScene(nextScene)
       }
     } catch (error) {
-      console.error('Failed to progress story:', error)
+      console.error('Failed to process choice:', error)
     } finally {
       setIsProcessing(false)
     }
   }
 
-  const handleVoiceInput = async (text: string) => {
-    if (!isProcessing) {
-      await progressStory(text)
-    }
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-xl">Loading your adventure...</div>
+      </div>
+    )
   }
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-8">
+      {/* Voice Selector */}
+      <div className="flex items-center gap-4 justify-end">
+        <select 
+          value={selectedVoice}
+          onChange={(e) => setSelectedVoice(e.target.value)}
+          className="bg-white/10 rounded p-2"
+        >
+          {availableVoices.map(voice => (
+            <option key={voice.id} value={voice.id}>
+              {voice.name}
+            </option>
+          ))}
+        </select>
+        <div className="text-sm text-gray-400">
+          Step {stepCount}/{MAX_STEPS}
+        </div>
+      </div>
+
       {/* Story Header */}
       <div className="text-center">
         <h1 className="text-4xl font-bold mb-4">AI Interactive Story Adventure</h1>
-        <p className="text-xl text-gray-300">{currentNode.narration}</p>
+        <p className="text-xl text-gray-300">{currentScene?.narration}</p>
       </div>
 
       {/* Main Story Area */}
       <div className="bg-white/10 backdrop-blur-lg rounded-lg p-6">
         <div className="mb-6">
-          <h2 className="text-2xl font-bold mb-4">{currentNode.dialog}</h2>
-          <div className="text-gray-300">{currentNode.sceneDescription}</div>
+          <h2 className="text-2xl font-bold mb-4">{currentScene?.dialog}</h2>
+          <div className="text-gray-300">{currentScene?.sceneDescription}</div>
         </div>
 
-        {/* Voice Controls */}
-        <div className="mb-6">
-          <VoiceInput 
-            onVoiceInput={handleVoiceInput}
-            choices={currentNode.choices.map(c => c.text)}
-            onChoiceSelected={handleVoiceInput}
-            progressStory={progressStory}
-          />
-        </div>
+        {stepCount >= MAX_STEPS ? (
+          <div className="text-yellow-400 p-4 rounded bg-yellow-400/10">
+            You've reached the end of your journey! Thanks for playing.
+          </div>
+        ) : (
+          <>
+            {/* Voice Controls */}
+            <div className="mb-6">
+              <VoiceInput 
+                onVoiceInput={handleChoice}
+                choices={currentScene?.choices.map((c: any) => c.text) || []}
+                onChoiceSelected={handleChoice}
+                progressStory={handleChoice}
+              />
+            </div>
 
-        {/* Choice Buttons */}
-        <div className="space-y-4">
-          {currentNode.choices.map((choice, index) => (
-            <button
-              key={index}
-              onClick={() => progressStory(choice.text)}
-              disabled={isProcessing}
-              className="w-full text-left p-4 bg-white/5 hover:bg-white/10 rounded-lg transition-colors disabled:opacity-50 flex items-center justify-between"
-            >
-              <span>{choice.text}</span>
-              <span className="text-sm text-gray-400">🗣️ Say this option</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Story Progress */}
-      <div className="text-center text-sm text-gray-400">
-        Current Chapter: {currentNode.id}
+            {/* Choice Buttons */}
+            <div className="space-y-4">
+              {currentScene?.choices.map((choice: any, index: number) => (
+                <button
+                  key={index}
+                  onClick={() => handleChoice(choice.text)}
+                  disabled={isProcessing}
+                  className="w-full text-left p-4 bg-white/5 hover:bg-white/10 rounded-lg transition-colors disabled:opacity-50 flex items-center justify-between"
+                >
+                  <span>{choice.text}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-400">🗣️ Say this option</span>
+                    <span className="text-xs text-gray-500">or click</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </div>
   )

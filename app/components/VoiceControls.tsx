@@ -33,7 +33,7 @@ export default function VoiceControls({
       >
         {VOICE_PRESETS.map(voice => (
           <option key={voice.id} value={voice.id}>
-            {voice.name} - {voice.description}
+            {voice.name}
           </option>
         ))}
       </select>
