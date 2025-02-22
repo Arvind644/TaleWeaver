@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^6.12.0",
+    "@fal-ai/client": "^1.2.3",
+    "@fal-ai/server-proxy": "^1.1.1",
     "@fal-ai/serverless-client": "^0.15.0",
     "@prisma/client": "^6.4.1",
     "@vercel/postgres": "^0.10.0",

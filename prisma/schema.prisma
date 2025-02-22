@@ -52,6 +52,7 @@ model Story {
   id        String   @id @default(cuid())
   userId    String
   title     String
+  imageUrl  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   scenes    Scene[]
@@ -61,13 +62,14 @@ model Scene {
   id              String         @id @default(cuid())
   storyId         String
   story           Story          @relation(fields: [storyId], references: [id])
-  storyTemplateId String? // Make it optional
+  storyTemplateId String?
   storyTemplate   StoryTemplate? @relation(fields: [storyTemplateId], references: [id])
   stepNumber      Int
   narration       String
   dialog          String
   description     String
   choices         Json
+  imageUrl        String?
   createdAt       DateTime       @default(now())
 }
 

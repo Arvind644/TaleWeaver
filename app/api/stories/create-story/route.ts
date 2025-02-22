@@ -9,12 +9,13 @@ export async function POST(request: Request) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
-    const { title } = await request.json();
+    const { title, imageUrl } = await request.json();
     
     const story = await prisma.story.create({
       data: {
         userId,
-        title
+        title,
+        imageUrl
       }
     });
 

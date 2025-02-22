@@ -5,6 +5,9 @@ import { VoiceService } from '@/lib/voice-service'
 import { StoryGenerationService } from '@/lib/story-generation-service'
 import VoiceInput from './VoiceInput'
 import { useUser } from "@clerk/nextjs";
+import SceneVisualizer from './SceneVisualizer';
+import Image from 'next/image';
+import ImagePromptDialog from './ImagePromptDialog';
 
 const INITIAL_SCENE = {
   narration: "Welcome to an enchanted realm where magic and mystery intertwine.",
@@ -44,6 +47,10 @@ export default function StoryInterface({ storyId }: StoryInterfaceProps) {
   const [selectedVoice, setSelectedVoice] = useState('21m00Tcm4TlvDq8ikWAM')
   const [availableVoices, setAvailableVoices] = useState<any[]>([])
   const { user } = useUser();
+  const [currentSceneImage, setCurrentSceneImage] = useState<string | null>(null);
+  const [sceneImagePrompt, setSceneImagePrompt] = useState<string>('');
+  const [story, setStory] = useState<{ title: string; imageUrl: string | null }>({ title: '', imageUrl: null });
+  const [showStoryImageDialog, setShowStoryImageDialog] = useState(false);
 
   const [voiceService] = useState(() => new VoiceService({
     apiKey: process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || '',
@@ -78,6 +85,21 @@ export default function StoryInterface({ storyId }: StoryInterfaceProps) {
     }
     loadVoices()
   }, [])
+
+  useEffect(() => {
+    const fetchStory = async () => {
+      try {
+        const response = await fetch(`/api/stories/${storyId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setStory(data.story);
+        }
+      } catch (error) {
+        console.error('Failed to fetch story:', error);
+      }
+    };
+    fetchStory();
+  }, [storyId]);
 
   const handleChoice = async (choice: string) => {
     if (isProcessing || stepCount >= MAX_STEPS) return
@@ -132,7 +154,8 @@ export default function StoryInterface({ storyId }: StoryInterfaceProps) {
             narration: currentScene.narration,
             dialog: currentScene.dialog,
             description: currentScene.sceneDescription,
-            choices: JSON.stringify(currentScene.choices)
+            choices: JSON.stringify(currentScene.choices),
+            imageUrl: currentSceneImage
           }
         })
       });
@@ -161,6 +184,22 @@ export default function StoryInterface({ storyId }: StoryInterfaceProps) {
     }
   };
 
+  const handleUpdateStoryImage = async (imageUrl: string) => {
+    try {
+      const response = await fetch(`/api/stories/${storyId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl })
+      });
+
+      if (response.ok) {
+        setStory(prev => ({ ...prev, imageUrl }));
+      }
+    } catch (error) {
+      console.error('Failed to update story image:', error);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -171,6 +210,57 @@ export default function StoryInterface({ storyId }: StoryInterfaceProps) {
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-8">
+      {/* Story Header with Image */}
+      <div className="text-center space-y-6">
+        <h1 className="text-4xl font-bold mb-4">{story.title}</h1>
+        
+        <div className="relative">
+          {story.imageUrl && (
+            <div className="relative aspect-video rounded-lg overflow-hidden mb-6">
+              <Image 
+                src={story.imageUrl}
+                alt="Story cover"
+                fill
+                className="object-cover"
+              />
+              <button
+                onClick={() => setShowStoryImageDialog(true)}
+                className="absolute bottom-4 right-4 px-4 py-2 bg-black/50 hover:bg-black/70 rounded"
+              >
+                Edit Cover Image
+              </button>
+            </div>
+          )}
+        </div>
+
+        {showStoryImageDialog && (
+          <ImagePromptDialog
+            defaultPrompt={`Create a cover image for the story: ${story.title}`}
+            onGenerate={async (prompt) => {
+              // Generate image logic
+            }}
+            onSave={() => {
+              handleUpdateStoryImage(story.imageUrl!);
+              setShowStoryImageDialog(false);
+            }}
+            onClose={() => setShowStoryImageDialog(false)}
+            imageUrl={story.imageUrl}
+            isGenerating={false}
+          />
+        )}
+
+        {/* Scene Visualizer */}
+        <div className="border-t border-white/10 pt-6">
+          <h2 className="text-2xl font-semibold mb-4">Current Scene</h2>
+          <SceneVisualizer
+            narration={currentScene.narration}
+            description={currentScene.sceneDescription}
+            onImageGenerated={setCurrentSceneImage}
+            defaultPrompt={sceneImagePrompt}
+          />
+        </div>
+      </div>
+
       {/* Voice Selector */}
       <div className="flex items-center gap-4 justify-end">
         <select 
@@ -187,12 +277,6 @@ export default function StoryInterface({ storyId }: StoryInterfaceProps) {
         <div className="text-sm text-gray-400">
           Step {stepCount}/{MAX_STEPS}
         </div>
-      </div>
-
-      {/* Story Header */}
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">AI Interactive Story Adventure</h1>
-        <p className="text-xl text-gray-300">{currentScene?.narration}</p>
       </div>
 
       {/* Main Story Area */}
@@ -266,6 +350,17 @@ export default function StoryInterface({ storyId }: StoryInterfaceProps) {
         <div className="text-sm text-gray-400">
           Step {stepCount}/{MAX_STEPS}
         </div>
+      </div>
+
+      {/* Prompt Input */}
+      <div className="mt-4">
+        <textarea
+          value={sceneImagePrompt}
+          onChange={(e) => setSceneImagePrompt(e.target.value)}
+          placeholder="Customize image generation prompt (optional)"
+          className="w-full p-3 bg-white/5 rounded"
+          rows={2}
+        />
       </div>
     </div>
   )
