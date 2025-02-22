@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { VoiceService } from '@/lib/voice-service'
 import { StoryGenerationService } from '@/lib/story-generation-service'
 import VoiceInput from './VoiceInput'
+import { useUser } from "@clerk/nextjs";
 
 const INITIAL_SCENE = {
   narration: "Welcome to an enchanted realm where magic and mystery intertwine.",
@@ -30,7 +31,11 @@ const INITIAL_SCENE = {
 
 const MAX_STEPS = 10 // Maximum story steps
 
-export default function StoryInterface() {
+interface StoryInterfaceProps {
+  storyId: string;
+}
+
+export default function StoryInterface({ storyId }: StoryInterfaceProps) {
   const [currentScene, setCurrentScene] = useState(INITIAL_SCENE)
   const [isProcessing, setIsProcessing] = useState(false)
   const [previousChoices, setPreviousChoices] = useState<string[]>([])
@@ -38,6 +43,7 @@ export default function StoryInterface() {
   const [stepCount, setStepCount] = useState(0)
   const [selectedVoice, setSelectedVoice] = useState('21m00Tcm4TlvDq8ikWAM')
   const [availableVoices, setAvailableVoices] = useState<any[]>([])
+  const { user } = useUser();
 
   const [voiceService] = useState(() => new VoiceService({
     apiKey: process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || '',
@@ -111,6 +117,49 @@ export default function StoryInterface() {
       setIsProcessing(false)
     }
   }
+
+  const handleSaveScene = async () => {
+    if (!user) return;
+    
+    try {
+      const response = await fetch('/api/stories/save-scene', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          storyId,
+          scene: {
+            stepNumber: stepCount,
+            narration: currentScene.narration,
+            dialog: currentScene.dialog,
+            description: currentScene.sceneDescription,
+            choices: JSON.stringify(currentScene.choices)
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save scene');
+      }
+    } catch (error) {
+      console.error('Failed to save scene:', error);
+    }
+  };
+
+  const handleRegenerateScene = async () => {
+    setIsProcessing(true);
+    try {
+      const nextScene = await storyService.generateNextScene({
+        currentScene: currentScene.dialog,
+        playerChoices: currentScene.choices.map((c: any) => c.text),
+        previousChoices
+      });
+      setCurrentScene(nextScene);
+    } catch (error) {
+      console.error('Failed to regenerate scene:', error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -188,6 +237,35 @@ export default function StoryInterface() {
             </div>
           </>
         )}
+      </div>
+
+      {/* Story Controls */}
+      <div className="flex justify-between items-center">
+        <div className="flex gap-4">
+          <button
+            onClick={handleSaveScene}
+            className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded"
+          >
+            Save Scene
+          </button>
+          <button
+            onClick={handleRegenerateScene}
+            className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 rounded"
+          >
+            Regenerate Scene
+          </button>
+          {stepCount > 0 && (
+            <button
+              onClick={() => setStepCount(MAX_STEPS)}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded"
+            >
+              End Story
+            </button>
+          )}
+        </div>
+        <div className="text-sm text-gray-400">
+          Step {stepCount}/{MAX_STEPS}
+        </div>
       </div>
     </div>
   )

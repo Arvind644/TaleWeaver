@@ -10,20 +10,20 @@ datasource db {
 }
 
 model User {
-  id            String         @id @default(cuid())
-  clerkId       String         @unique
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  gameStates    GameState[]
-  preferences   UserPreference?
+  id          String          @id @default(cuid())
+  clerkId     String          @unique
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  gameStates  GameState[]
+  preferences UserPreference?
 }
 
 model UserPreference {
   id            String   @id @default(cuid())
   userId        String   @unique
   user          User     @relation(fields: [userId], references: [id])
-  voiceSettings Json?    // Store voice preferences
-  themeSettings String?  // Store UI preferences
+  voiceSettings Json? // Store voice preferences
+  themeSettings String? // Store UI preferences
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
@@ -33,8 +33,8 @@ model GameState {
   userId        String
   user          User     @relation(fields: [userId], references: [id])
   currentScene  String
-  storyProgress Json     // Store story state as JSON
-  choices       Json     // Store player choices
+  storyProgress Json // Store story state as JSON
+  choices       Json // Store player choices
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
@@ -48,15 +48,32 @@ model StoryTemplate {
   updatedAt   DateTime @updatedAt
 }
 
+model Story {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  scenes    Scene[]
+}
+
 model Scene {
-  id              String        @id @default(cuid())
-  storyTemplateId String
-  storyTemplate   StoryTemplate @relation(fields: [storyTemplateId], references: [id])
+  id              String         @id @default(cuid())
+  storyId         String
+  story           Story          @relation(fields: [storyId], references: [id])
+  storyTemplateId String? // Make it optional
+  storyTemplate   StoryTemplate? @relation(fields: [storyTemplateId], references: [id])
+  stepNumber      Int
+  narration       String
+  dialog          String
   description     String
-  dialogue        Json          // Store possible dialogues
-  choices         Json          // Store possible choices
-  nextScenes      Json          // Store scene connections
-  imagePrompt     String?       // Store image generation prompt
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-} 
+  choices         Json
+  createdAt       DateTime       @default(now())
+}
+
+model dumy {
+    id String @id @default(cuid())
+    name String
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
