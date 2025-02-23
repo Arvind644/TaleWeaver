@@ -9,6 +9,7 @@ import SceneVisualizer from './SceneVisualizer';
 import Image from 'next/image';
 import ImagePromptDialog from './ImagePromptDialog';
 import AudioPreview from './AudioPreview';
+import { useRouter } from 'next/navigation';
 
 interface Scene {
   id: string;
@@ -66,6 +67,7 @@ export default function StoryInterface({ storyId, currentScene = INITIAL_SCENE }
   const [sceneImagePrompt, setSceneImagePrompt] = useState<string>('');
   const [story, setStory] = useState<{ title: string; imageUrl: string | null }>({ title: '', imageUrl: null });
   const [showStoryImageDialog, setShowStoryImageDialog] = useState(false);
+  const router = useRouter();
 
   const [voiceService] = useState(() => new VoiceService({
     apiKey: process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || '',
@@ -350,6 +352,18 @@ export default function StoryInterface({ storyId, currentScene = INITIAL_SCENE }
               Regenerate Scene
             </button>
           </div>
+          
+          {/* Add End Story Button */}
+          <button
+            onClick={() => {
+              if (confirm('Are you sure you want to end this story? This will mark it as complete.')) {
+                router.push(`/dashboard`);
+              }
+            }}
+            className="px-6 py-2 bg-[#244855] hover:bg-[#244855]/90 text-white rounded-lg shadow-sm transition-colors"
+          >
+            End Story
+          </button>
         </div>
       </div>
     </div>
