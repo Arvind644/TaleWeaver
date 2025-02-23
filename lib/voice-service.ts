@@ -26,38 +26,31 @@ export class VoiceService {
     this.voicePresets = new Map(VOICE_PRESETS.map(preset => [preset.name, preset]))
   }
 
-  async synthesizeSpeech(text: string): Promise<ArrayBuffer> {
-    console.log('Synthesizing speech:', text, 'with voice:', this.voiceId)
+  async synthesizeSpeech(text: string, voiceId?: string): Promise<ArrayBuffer> {
+    const useVoiceId = voiceId || this.voiceId
+    
     try {
-      const response = await fetch(
-        `${this.baseUrl}/text-to-speech/${this.voiceId}`,
-        {
-          method: 'POST',
-          headers: {
-            'Accept': 'audio/mpeg',
-            'Content-Type': 'application/json',
-            'xi-api-key': this.apiKey,
+      const response = await fetch(`${this.baseUrl}/text-to-speech/${useVoiceId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'xi-api-key': this.apiKey,
+        },
+        body: JSON.stringify({
+          text,
+          model_id: 'eleven_monolingual_v1',
+          voice_settings: {
+            stability: 0.5,
+            similarity_boost: 0.75,
           },
-          body: JSON.stringify({
-            text,
-            model_id: 'eleven_monolingual_v1',
-            voice_settings: {
-              stability: 0.5,
-              similarity_boost: 0.75,
-            },
-          }),
-        }
-      )
+        }),
+      })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        console.error('ElevenLabs API error:', errorData)
-        throw new Error(errorData.detail || `Failed to synthesize speech: ${response.status}`)
+        throw new Error('Failed to synthesize speech')
       }
 
-      const audioData = await response.arrayBuffer()
-      await this.playAudio(audioData)
-      return audioData
+      return response.arrayBuffer()
     } catch (error) {
       console.error('Speech synthesis error:', error)
       throw error

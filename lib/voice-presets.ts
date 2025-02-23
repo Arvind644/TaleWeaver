@@ -1,28 +1,23 @@
 export interface VoicePreset {
   id: string
   name: string
-  description: string
 }
 
-export const VOICE_PRESETS: VoicePreset[] = [
+export const VOICE_PRESETS = [
   {
     id: '21m00Tcm4TlvDq8ikWAM',
-    name: 'Rachel',
-    description: 'Main narrator - Warm and friendly'
+    name: 'Rachel - Main Narrator'
   },
   {
     id: 'AZnzlk1XvdvUeBnXmlld',
-    name: 'Domi',
-    description: 'Mystical character - Soft and ethereal'
+    name: 'Domi - Adventurous'
   },
   {
     id: 'EXAVITQu4vr4xnSDxMaL',
-    name: 'Bella',
-    description: 'Guide character - Wise and gentle'
+    name: 'Bella - Wise Elder'
   },
   {
-    id: 'ErXwobaYiN019PkySvjV',
-    name: 'Antoni',
-    description: 'Mentor character - Deep and authoritative'
+    id: 'VR6AewLTigWG4xSOukaG',
+    name: 'Adam - Mysterious'
   }
-] 
+]; 

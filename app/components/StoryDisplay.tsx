@@ -12,8 +12,8 @@ interface StoryDisplayProps {
 }
 
 export default function StoryDisplay({ storyNode, onChoiceSelected }: StoryDisplayProps) {
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [currentVoiceId, setCurrentVoiceId] = useState(VOICE_PRESETS[0].id)
+  const [isPlaying, _setIsPlaying] = useState(false)
+  const [_currentVoiceId, setCurrentVoiceId] = useState(VOICE_PRESETS[0].id)
 
   const handleVoiceInput = (text: string) => {
     const normalizedInput = text.toLowerCase()

@@ -7,7 +7,7 @@ export async function POST(request: Request) {
   try {
     const savedState = await saveGameState(userId, storyProgress)
     return NextResponse.json(savedState)
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed to save game state' }, { status: 500 })
   }
 }
@@ -23,7 +23,7 @@ export async function GET(request: Request) {
   try {
     const gameState = await loadGameState(userId)
     return NextResponse.json(gameState)
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed to load game state' }, { status: 500 })
   }
 } 
