@@ -34,10 +34,10 @@ export async function GET(
   { params }: { params: { storyId: string } }
 ) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
-      return new NextResponse('Unauthorized', { status: 401 });
-    }
+    // const { userId } = await auth();
+    // if (!userId) {
+    //   return new NextResponse('Unauthorized', { status: 401 });
+    // }
 
     const story = await prisma.story.findUnique({
       where: {

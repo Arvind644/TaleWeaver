@@ -156,177 +156,122 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Your Stories</h1>
-        <button
-          onClick={() => setShowNewStoryDialog(true)}
-          className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded"
-        >
-          Create New Story
-        </button>
-      </div>
+    <div className="min-h-screen bg-[#FBE9D0] p-8">
+      <div className="max-w-6xl mx-auto">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold text-[#244855]">Your Stories</h1>
+          <button
+            onClick={() => setShowNewStoryDialog(true)}
+            className="px-6 py-2 bg-[#E64833] hover:bg-[#E64833]/90 text-white rounded-lg shadow-sm transition-colors"
+          >
+            Create New Story
+          </button>
+        </div>
 
-      {showNewStoryDialog && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-          <div className="bg-gray-800 p-6 rounded-lg w-96">
-            <h3 className="text-xl mb-4">Create New Story</h3>
-            <input
-              type="text"
-              value={newStoryTitle}
-              onChange={(e) => setNewStoryTitle(e.target.value)}
-              placeholder="Enter story title"
-              className="w-full p-2 mb-4 bg-gray-700 rounded"
-            />
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setShowNewStoryDialog(false)}
-                className="px-4 py-2 bg-gray-600 rounded"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCreateStory}
-                className="px-4 py-2 bg-green-600 rounded"
-                disabled={!newStoryTitle.trim()}
-              >
-                Create
-              </button>
+        {showNewStoryDialog && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
+            <div className="bg-gray-800 p-6 rounded-lg w-96">
+              <h3 className="text-xl mb-4">Create New Story</h3>
+              <input
+                type="text"
+                value={newStoryTitle}
+                onChange={(e) => setNewStoryTitle(e.target.value)}
+                placeholder="Enter story title"
+                className="w-full p-2 mb-4 bg-gray-700 rounded"
+              />
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => setShowNewStoryDialog(false)}
+                  className="px-4 py-2 bg-gray-600 rounded"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateStory}
+                  className="px-4 py-2 bg-green-600 rounded"
+                  disabled={!newStoryTitle.trim()}
+                >
+                  Create
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {stories.map((story) => (
-          <div 
-            key={story.id}
-            className={`bg-gray-800 rounded-lg overflow-hidden cursor-pointer transform hover:scale-[1.02] transition-transform ${
-              selectedStory?.id === story.id ? 'ring-2 ring-blue-500' : ''
-            }`}
-            onClick={() => handleStoryClick(story.id)}
-          >
-            {/* Story Image */}
-            <div className="relative aspect-video bg-gray-700">
-              {story.imageUrl ? (
-                <>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {stories.map((story) => (
+            <div 
+              key={story.id}
+              className="bg-white rounded-lg overflow-hidden border border-[#90AEAD] shadow-sm"
+            >
+              {/* Story Cover */}
+              <div className="relative aspect-video bg-[#FBE9D0]/30">
+                {story.imageUrl ? (
                   <Image
                     src={story.imageUrl}
                     alt={story.title}
                     fill
                     className="object-cover"
                   />
-                  <div 
-                    className="absolute bottom-2 right-2 flex gap-2"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <button
-                      onClick={() => {
-                        setEditingStory(story);
-                        setShowImageDialog(true);
-                      }}
-                      className="p-2 bg-black/50 hover:bg-black/70 rounded"
-                    >
-                      Edit Image
-                    </button>
-                    <button
-                      onClick={() => handleUpdateStoryImage(story.id, null)}
-                      className="p-2 bg-red-600/50 hover:bg-red-600/70 rounded"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setEditingStory(story);
-                    setShowImageDialog(true);
-                  }}
-                  className="absolute inset-0 flex items-center justify-center bg-gray-700 hover:bg-gray-600"
-                >
-                  Add Cover Image
-                </button>
-              )}
-            </div>
-
-            {/* Story Info */}
-            <div className="p-4">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="text-xl font-semibold mb-1">{story.title}</h3>
-                  <p className="text-sm text-gray-400">
-                    {new Date(story.createdAt).toLocaleDateString()}
-                  </p>
-                  <p className="text-sm text-gray-400">
-                    {story.scenes?.length || 0} / {MAX_SCENES} scenes
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  {(story.scenes?.length || 0) < MAX_SCENES && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        router.push(`/story/${story.id}/create`);
-                      }}
-                      className="px-3 py-1 bg-green-600 hover:bg-green-700 rounded text-sm"
-                    >
-                      Add Scene
-                    </button>
-                  )}
+                ) : (
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteStory(story.id);
+                    onClick={() => {
+                      setEditingStory(story);
+                      setShowImageDialog(true);
                     }}
-                    className="text-red-500 hover:text-red-400"
+                    className="absolute inset-0 flex items-center justify-center text-[#874F41] hover:bg-[#90AEAD]/10"
+                  >
+                    Add Cover Image
+                  </button>
+                )}
+              </div>
+
+              {/* Story Info */}
+              <div className="p-4">
+                <h2 className="text-xl font-bold text-[#244855] mb-2">{story.title}</h2>
+                <div className="flex justify-between items-center text-sm text-[#874F41]">
+                  <span>{new Date(story.createdAt).toLocaleDateString()}</span>
+                  <span>{story.scenes?.length || 0}/10 scenes</span>
+                </div>
+
+                {/* Story Actions */}
+                <div className="flex gap-2 mt-4">
+                  <button
+                    onClick={() => router.push(`/story/${story.id}`)}
+                    className="flex-1 px-3 py-1.5 bg-[#244855] hover:bg-[#244855]/90 text-white rounded"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => router.push(`/story/${story.id}/play`)}
+                    className="flex-1 px-3 py-1.5 bg-[#E64833] hover:bg-[#E64833]/90 text-white rounded"
+                  >
+                    Play
+                  </button>
+                  <button
+                    onClick={() => handleDeleteStory(story.id)}
+                    className="px-3 py-1.5 bg-[#90AEAD] hover:bg-[#90AEAD]/80 text-white rounded"
                   >
                     Delete
                   </button>
                 </div>
               </div>
-
-              {/* Scenes Preview */}
-              {selectedStory?.id === story.id && story.scenes && (
-                <div className="space-y-4 mt-4 border-t border-gray-700 pt-4">
-                  {story.scenes.map((scene) => (
-                    <div key={scene.id} className="flex gap-4">
-                      {scene.imageUrl && (
-                        <div className="relative w-24 h-16 bg-gray-700 rounded">
-                          <Image
-                            src={scene.imageUrl}
-                            alt={`Scene ${scene.stepNumber}`}
-                            fill
-                            className="object-cover rounded"
-                          />
-                        </div>
-                      )}
-                      <div className="flex-1">
-                        <div className="font-semibold">Scene {scene.stepNumber}</div>
-                        <div className="text-sm text-gray-400 truncate">
-                          {scene.narration}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       {/* Image Edit Dialog */}
       {showImageDialog && editingStory && (
         <ImagePromptDialog
           defaultPrompt={`Create a cover image for the story: ${editingStory.title}`}
-          onGenerate={async () => {
-            // Do nothing here, let ImagePromptDialog handle the state
-          }}
-          onSave={(imageUrl) => {
-            handleUpdateStoryImage(editingStory.id, imageUrl);
-            setShowImageDialog(false);
+          onSave={async (imageUrl) => {
+            try {
+              await handleUpdateStoryImage(editingStory.id, imageUrl);
+              setShowImageDialog(false);
+            } catch (error) {
+              console.error('Failed to update story image:', error);
+            }
           }}
           onClose={() => setShowImageDialog(false)}
           imageUrl={editingStory.imageUrl || null}

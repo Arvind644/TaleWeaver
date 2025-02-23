@@ -45,6 +45,8 @@ export default function StoryPage() {
   const [editingScene, setEditingScene] = useState<Scene | null>(null)
   const [showVoiceDialog, setShowVoiceDialog] = useState(false)
   const [selectedSceneForVoices, setSelectedSceneForVoices] = useState<Scene | null>(null)
+  const [stepCount, setStepCount] = useState(0)
+  const [MAX_STEPS, setMAX_STEPS] = useState(0)
 
   useEffect(() => {
     fetchStory();
@@ -56,6 +58,7 @@ export default function StoryPage() {
       if (response.ok) {
         const data = await response.json();
         setStory(data.story);
+        setMAX_STEPS(data.story.scenes.length)
       }
     } catch (error) {
       console.error('Failed to fetch story:', error);
@@ -78,10 +81,12 @@ export default function StoryPage() {
 
       if (response.ok) {
         fetchStory(); // Refresh story data
+        return { success: true };
       }
     } catch (error) {
       console.error('Failed to update image:', error);
     }
+    return { success: false };
   };
 
   const handleUpdateScene = async (scene: Scene) => {
@@ -173,238 +178,226 @@ export default function StoryPage() {
     }
   };
 
+  const handleSaveScene = async () => {
+    if (selectedScene) {
+      await handleUpdateScene(selectedScene);
+      setStepCount(stepCount + 1);
+    }
+  };
+
+  const handleRegenerateScene = async () => {
+    if (selectedScene) {
+      await handleGenerateAllAudio(selectedScene, DEFAULT_VOICES);
+      setStepCount(stepCount + 1);
+    }
+  };
+
   if (loading) return <div>Loading story...</div>;
   if (!story) return <div>Story not found</div>;
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex justify-between items-center mb-4">
-          <h1 className="text-3xl font-bold">{story.title}</h1>
-          <div className="flex gap-2">
-            <Link
-              href={`/story/${storyId}/play`}
-              className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded"
+    <div 
+      className="min-h-screen bg-cover bg-center bg-fixed p-8" 
+      style={{ 
+        backgroundImage: 'url("/forest.png")',
+        backgroundColor: 'rgba(36, 72, 85, 0.2)', // Light overlay for background
+        backgroundBlendMode: 'soft-light'
+      }}
+    >
+      <div className="max-w-6xl mx-auto">
+        {/* Header - darker background */}
+        <div className="flex justify-between items-center mb-8 bg-white/90 backdrop-blur-sm p-6 rounded-xl shadow-lg border border-[#90AEAD]">
+          <h1 className="text-4xl font-bold text-[#244855]">{story.title}</h1>
+          <div className="flex gap-4">
+            <button
+              onClick={() => router.push(`/story/${storyId}/play`)}
+              className="px-6 py-2 bg-[#E64833] hover:bg-[#E64833]/90 text-white rounded-lg shadow-md transition-all hover:scale-105"
             >
               Play Story
-            </Link>
+            </button>
             <button
               onClick={() => router.push('/dashboard')}
-              className="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded"
+              className="px-6 py-2 bg-[#90AEAD] hover:bg-[#90AEAD]/90 text-white rounded-lg shadow-md transition-all hover:scale-105"
             >
               Back to Dashboard
             </button>
           </div>
         </div>
 
-        {/* Story Cover */}
-        <div className="relative aspect-video rounded-lg overflow-hidden">
-          {story.imageUrl ? (
-            <>
-              <Image
-                src={story.imageUrl}
-                alt={story.title}
-                fill
-                className="object-cover"
-              />
-              <button
-                onClick={() => {
-                  setSelectedScene(null);
-                  setShowImageDialog(true);
-                }}
-                className="absolute bottom-4 right-4 px-4 py-2 bg-black/50 hover:bg-black/70 rounded"
-              >
-                Edit Cover Image
-              </button>
-            </>
-          ) : (
-            <button
-              onClick={() => {
-                setSelectedScene(null);
-                setShowImageDialog(true);
-              }}
-              className="absolute inset-0 flex items-center justify-center bg-gray-700 hover:bg-gray-600"
+        {/* Scenes - darker background and text */}
+        <div className="space-y-6">
+          {story.scenes.map((scene) => (
+            <div 
+              key={scene.id}
+              className="bg-white/95 backdrop-blur-sm rounded-xl overflow-hidden border border-[#90AEAD] shadow-lg hover:shadow-xl transition-all"
             >
-              Add Cover Image
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Scenes */}
-      <div className="space-y-8">
-        {story.scenes.map((scene) => (
-          <div 
-            key={scene.id}
-            className="bg-gray-800 rounded-lg overflow-hidden"
-          >
-            <div className="flex">
-              {/* Scene Image */}
-              <div className="relative w-1/3 aspect-video bg-gray-700">
-                {scene.imageUrl ? (
-                  <>
-                    <Image
-                      src={scene.imageUrl}
-                      alt={`Scene ${scene.stepNumber}`}
-                      fill
-                      className="object-cover"
-                    />
+              <div className="flex">
+                {/* Scene Image */}
+                <div className="relative w-1/3 aspect-video bg-[#FBE9D0]/50">
+                  {scene.imageUrl ? (
+                    <div className="relative h-full group">
+                      <Image
+                        src={scene.imageUrl}
+                        alt={`Scene ${scene.stepNumber}`}
+                        fill
+                        className="object-cover"
+                      />
+                      <button
+                        onClick={() => {
+                          setSelectedScene(scene);
+                          setShowImageDialog(true);
+                        }}
+                        className="absolute bottom-4 right-4 px-4 py-2 bg-[#244855]/90 hover:bg-[#244855] text-white rounded-lg shadow-md transition-all opacity-0 group-hover:opacity-100"
+                      >
+                        Edit Image
+                      </button>
+                    </div>
+                  ) : (
                     <button
                       onClick={() => {
                         setSelectedScene(scene);
                         setShowImageDialog(true);
                       }}
-                      className="absolute bottom-4 right-4 px-4 py-2 bg-black/50 hover:bg-black/70 rounded"
+                      className="absolute inset-0 flex items-center justify-center bg-[#FBE9D0]/30 hover:bg-[#FBE9D0]/50 text-[#244855] border border-[#90AEAD] transition-all"
                     >
-                      Edit Image
+                      <span className="text-lg font-semibold">Add Scene Image</span>
                     </button>
-                  </>
-                ) : (
-                  <button
-                    onClick={() => {
-                      setSelectedScene(scene);
-                      setShowImageDialog(true);
-                    }}
-                    className="absolute inset-0 flex items-center justify-center hover:bg-gray-600"
-                  >
-                    Add Image
-                  </button>
-                )}
-              </div>
-
-              {/* Scene Content */}
-              <div className="flex-1 p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <h3 className="text-2xl font-bold">Scene {scene.stepNumber}</h3>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => {
-                        setSelectedSceneForVoices(scene);
-                        setShowVoiceDialog(true);
-                      }}
-                      className="px-3 py-1 bg-green-600 hover:bg-green-700 rounded text-sm"
-                      disabled={isGenerating}
-                    >
-                      Generate All Audio
-                    </button>
-                    <button
-                      onClick={() => setEditingScene(scene)}
-                      className="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDeleteScene(scene.id)}
-                      className="px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-sm"
-                    >
-                      Delete
-                    </button>
-                  </div>
+                  )}
                 </div>
 
-                {editingScene?.id === scene.id ? (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">Narration</label>
-                      <textarea
-                        value={editingScene.narration}
-                        onChange={(e) => setEditingScene({...editingScene, narration: e.target.value})}
-                        className="w-full p-2 bg-gray-700 rounded"
-                        rows={3}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">Dialog</label>
-                      <textarea
-                        value={editingScene.dialog}
-                        onChange={(e) => setEditingScene({...editingScene, dialog: e.target.value})}
-                        className="w-full p-2 bg-gray-700 rounded"
-                        rows={3}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">Description</label>
-                      <textarea
-                        value={editingScene.description}
-                        onChange={(e) => setEditingScene({...editingScene, description: e.target.value})}
-                        className="w-full p-2 bg-gray-700 rounded"
-                        rows={3}
-                      />
-                    </div>
-                    <div className="flex justify-end gap-2">
+                {/* Scene Content */}
+                <div className="flex-1 p-8">
+                  <div className="flex justify-between items-start mb-6">
+                    <h3 className="text-3xl font-bold text-[#244855]">Scene {scene.stepNumber}</h3>
+                    <div className="flex gap-3">
                       <button
-                        onClick={() => setEditingScene(null)}
-                        className="px-3 py-1 bg-gray-600 hover:bg-gray-700 rounded"
+                        onClick={() => {
+                          setSelectedSceneForVoices(scene);
+                          setShowVoiceDialog(true);
+                        }}
+                        className="px-4 py-2 bg-[#E64833] hover:bg-[#E64833]/90 text-white rounded-lg shadow-md transition-all hover:scale-105"
+                        disabled={isGenerating}
                       >
-                        Cancel
+                        Generate Audio
                       </button>
                       <button
-                        onClick={() => handleUpdateScene(editingScene)}
-                        className="px-3 py-1 bg-green-600 hover:bg-green-700 rounded"
+                        onClick={() => setEditingScene(scene)}
+                        className="px-4 py-2 bg-[#244855] hover:bg-[#244855]/90 text-white rounded-lg shadow-md transition-all hover:scale-105"
                       >
-                        Save
+                        Edit Scene
+                      </button>
+                      <button
+                        onClick={() => handleDeleteScene(scene.id)}
+                        className="px-4 py-2 bg-[#90AEAD] hover:bg-[#90AEAD]/80 text-white rounded-lg shadow-md transition-all hover:scale-105"
+                      >
+                        Delete
                       </button>
                     </div>
                   </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="bg-gray-700/50 p-4 rounded">
-                      <div className="flex justify-between items-center mb-2">
-                        <h4 className="text-lg font-semibold">Narration</h4>
-                        <AudioPreview
-                          text={scene.narration}
-                          sceneId={scene.id}
-                          type="narration"
-                          existingAudioUrl={scene.narrationAudioUrl}
-                          onAudioGenerated={(url) => handleAudioGenerated(scene.id, 'narration', url)}
+
+                  {editingScene?.id === scene.id ? (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-[#244855] mb-1">Narration</label>
+                        <textarea
+                          value={editingScene.narration}
+                          onChange={(e) => setEditingScene({...editingScene, narration: e.target.value})}
+                          className="w-full p-2 bg-white border border-[#90AEAD] rounded-lg text-[#244855] placeholder-[#874F41]/50"
+                          rows={3}
                         />
                       </div>
-                      <p className="text-gray-300">{scene.narration}</p>
-                    </div>
-
-                    <div className="bg-gray-700/50 p-4 rounded">
-                      <div className="flex justify-between items-center mb-2">
-                        <h4 className="text-lg font-semibold">Dialog</h4>
-                        <AudioPreview
-                          text={scene.dialog}
-                          sceneId={scene.id}
-                          type="dialog"
-                          existingAudioUrl={scene.dialogAudioUrl}
-                          onAudioGenerated={(url) => handleAudioGenerated(scene.id, 'dialog', url)}
+                      <div>
+                        <label className="block text-sm font-medium text-[#244855] mb-1">Dialog</label>
+                        <textarea
+                          value={editingScene.dialog}
+                          onChange={(e) => setEditingScene({...editingScene, dialog: e.target.value})}
+                          className="w-full p-2 bg-white border border-[#90AEAD] rounded-lg text-[#244855] placeholder-[#874F41]/50"
+                          rows={3}
                         />
                       </div>
-                      <p className="text-gray-300">{scene.dialog}</p>
-                    </div>
-
-                    <div className="bg-gray-700/50 p-4 rounded">
-                      <div className="flex justify-between items-center mb-2">
-                        <h4 className="text-lg font-semibold">Description</h4>
-                        <AudioPreview
-                          text={scene.description}
-                          sceneId={scene.id}
-                          type="description"
-                          existingAudioUrl={scene.descriptionAudioUrl}
-                          onAudioGenerated={(url) => handleAudioGenerated(scene.id, 'description', url)}
+                      <div>
+                        <label className="block text-sm font-medium text-[#244855] mb-1">Description</label>
+                        <textarea
+                          value={editingScene.description}
+                          onChange={(e) => setEditingScene({...editingScene, description: e.target.value})}
+                          className="w-full p-2 bg-white border border-[#90AEAD] rounded-lg text-[#244855] placeholder-[#874F41]/50"
+                          rows={3}
                         />
                       </div>
-                      <p className="text-gray-300">{scene.description}</p>
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => setEditingScene(null)}
+                          className="px-3 py-1 bg-[#90AEAD] hover:bg-[#90AEAD]/80 text-white rounded-lg"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => handleUpdateScene(editingScene)}
+                          className="px-3 py-1 bg-[#E64833] hover:bg-[#E64833]/90 text-white rounded-lg"
+                        >
+                          Save
+                        </button>
+                      </div>
                     </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="bg-[#FBE9D0]/10 p-4 rounded-lg border border-[#90AEAD]">
+                        <div className="flex justify-between items-center mb-2">
+                          <h4 className="text-lg font-semibold text-[#244855]">Narration</h4>
+                          <AudioPreview
+                            text={scene.narration}
+                            sceneId={scene.id}
+                            type="narration"
+                            existingAudioUrl={scene.narrationAudioUrl}
+                            onAudioGenerated={(url) => handleAudioGenerated(scene.id, 'narration', url)}
+                          />
+                        </div>
+                        <p className="text-[#244855]">{scene.narration}</p>
+                      </div>
 
-                    <div className="bg-gray-700/50 p-4 rounded">
-                      <h4 className="text-lg font-semibold mb-2">Choices</h4>
-                      <ul className="list-disc list-inside text-gray-300">
-                        {JSON.parse(scene.choices).map((choice: any, index: number) => (
-                          <li key={index}>{choice.text}</li>
-                        ))}
-                      </ul>
+                      <div className="bg-[#FBE9D0]/10 p-4 rounded-lg border border-[#90AEAD]">
+                        <div className="flex justify-between items-center mb-2">
+                          <h4 className="text-lg font-semibold text-[#244855]">Dialog</h4>
+                          <AudioPreview
+                            text={scene.dialog}
+                            sceneId={scene.id}
+                            type="dialog"
+                            existingAudioUrl={scene.dialogAudioUrl}
+                            onAudioGenerated={(url) => handleAudioGenerated(scene.id, 'dialog', url)}
+                          />
+                        </div>
+                        <p className="text-[#244855]">{scene.dialog}</p>
+                      </div>
+
+                      <div className="bg-[#FBE9D0]/10 p-4 rounded-lg border border-[#90AEAD]">
+                        <div className="flex justify-between items-center mb-2">
+                          <h4 className="text-lg font-semibold text-[#244855]">Description</h4>
+                          <AudioPreview
+                            text={scene.description}
+                            sceneId={scene.id}
+                            type="description"
+                            existingAudioUrl={scene.descriptionAudioUrl}
+                            onAudioGenerated={(url) => handleAudioGenerated(scene.id, 'description', url)}
+                          />
+                        </div>
+                        <p className="text-[#244855]">{scene.description}</p>
+                      </div>
+
+                      <div className="bg-[#FBE9D0]/10 p-4 rounded-lg border border-[#90AEAD]">
+                        <h4 className="text-lg font-semibold text-[#244855] mb-2">Choices</h4>
+                        <ul className="list-disc list-inside text-[#244855]">
+                          {JSON.parse(scene.choices).map((choice: any, index: number) => (
+                            <li key={index}>{choice.text}</li>
+                          ))}
+                        </ul>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       {/* Image Dialog */}
@@ -415,16 +408,14 @@ export default function StoryPage() {
             : `Generate cover image for story: ${story.title}`
           }
           onGenerate={async (imageUrl) => {
-            setIsGenerating(true);
-            try {
-              await handleUpdateImage(imageUrl, selectedScene?.id);
-            } finally {
-              setIsGenerating(false);
+            const result = await handleUpdateImage(imageUrl, selectedScene?.id);
+            if (result?.success) {
               setShowImageDialog(false);
               setSelectedScene(null);
             }
           }}
-          onSave={() => {
+          onSave={(imageUrl) => {
+            handleUpdateImage(imageUrl, selectedScene?.id);
             setShowImageDialog(false);
             setSelectedScene(null);
           }}
@@ -433,7 +424,6 @@ export default function StoryPage() {
             setSelectedScene(null);
           }}
           imageUrl={selectedScene?.imageUrl || story.imageUrl || null}
-          isGenerating={isGenerating}
         />
       )}
 
@@ -447,6 +437,34 @@ export default function StoryPage() {
           isGenerating={isGenerating}
         />
       )}
+
+      <div className="flex justify-between items-center">
+        <div className="flex gap-4">
+          <button
+            onClick={handleSaveScene}
+            className="px-6 py-2 bg-[#E64833] hover:bg-[#E64833]/90 text-white rounded-lg shadow-sm transition-colors"
+          >
+            Save Scene
+          </button>
+          <button
+            onClick={handleRegenerateScene}
+            className="px-6 py-2 bg-[#90AEAD] hover:bg-[#90AEAD]/80 text-white rounded-lg shadow-sm transition-colors"
+          >
+            Regenerate Scene
+          </button>
+          {stepCount > 0 && (
+            <button
+              onClick={() => setStepCount(MAX_STEPS)}
+              className="px-6 py-2 bg-[#244855] hover:bg-[#244855]/90 text-white rounded-lg shadow-sm transition-colors"
+            >
+              End Story
+            </button>
+          )}
+        </div>
+        <div className="text-[#244855]">
+          Step {stepCount}/{MAX_STEPS}
+        </div>
+      </div>
     </div>
   );
 } 

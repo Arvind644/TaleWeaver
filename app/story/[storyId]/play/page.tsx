@@ -271,11 +271,11 @@ export default function StoryPlayer() {
   if (!story || !currentScene) return <div>Loading story...</div>;
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-blue-300 text-white">
       {/* Video Player */}
       <div className="relative max-w-5xl mx-auto aspect-video">
         {/* Scene Image */}
-        <div className="absolute inset-0 bg-black">
+        <div className="absolute inset-0 bg-black mt-20">
           {currentScene.imageUrl ? (
             <div className="relative w-full h-full">
               <Image

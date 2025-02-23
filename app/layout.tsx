@@ -1,27 +1,32 @@
-import {
-  ClerkProvider,
-  SignInButton,
-  SignedIn,
-  SignedOut,
-  UserButton
-} from '@clerk/nextjs'
+import type { Metadata } from 'next'
+import { ClerkProvider } from '@clerk/nextjs'
+import { Inter } from 'next/font/google'
 import './globals.css'
+import Header from './components/Header'
+
+const inter = Inter({ subsets: ['latin'] })
+
+export const metadata: Metadata = {
+  title: 'TaleWeaver - Interactive Story Creation',
+  description: 'Create and experience interactive stories with AI-powered narration and visualization',
+}
+
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
   return (
-    <ClerkProvider>
+    <ClerkProvider 
+      signInUrl="/sign-in" 
+      signUpUrl="/sign-up"
+    >
       <html lang="en">
-        <body>
-          <SignedOut>
-            <SignInButton />
-          </SignedOut>
-          <SignedIn>
-            <UserButton />
-          </SignedIn>
-          {children}
+        <body className={inter.className}>
+          <Header />
+          <main>
+            {children}
+          </main>
         </body>
       </html>
     </ClerkProvider>

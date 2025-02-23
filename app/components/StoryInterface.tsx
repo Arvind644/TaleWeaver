@@ -9,6 +9,7 @@ import SceneVisualizer from './SceneVisualizer';
 import Image from 'next/image';
 import ImagePromptDialog from './ImagePromptDialog';
 import AudioPreview from './AudioPreview';
+import { useRouter } from 'next/navigation'
 
 interface Scene {
   id: string;
@@ -66,6 +67,7 @@ export default function StoryInterface({ storyId, currentScene = INITIAL_SCENE }
   const [sceneImagePrompt, setSceneImagePrompt] = useState<string>('');
   const [story, setStory] = useState<{ title: string; imageUrl: string | null }>({ title: '', imageUrl: null });
   const [showStoryImageDialog, setShowStoryImageDialog] = useState(false);
+  const router = useRouter()
 
   const [voiceService] = useState(() => new VoiceService({
     apiKey: process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || '',
@@ -128,7 +130,7 @@ export default function StoryInterface({ storyId, currentScene = INITIAL_SCENE }
       if (chosenOption) {
         await voiceService.synthesizeSpeech(
           `You chose: ${chosenOption.text}`, 
-          selectedVoice // Use selected voice
+          selectedVoice
         )
 
         setStepCount(prev => prev + 1)
@@ -216,6 +218,14 @@ export default function StoryInterface({ storyId, currentScene = INITIAL_SCENE }
     }
   };
 
+  const handleEndStory = () => {
+    setStepCount(MAX_STEPS);
+    // Add a small delay before redirecting to ensure state is updated
+    setTimeout(() => {
+      router.push('/dashboard');
+    }, 500);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -225,196 +235,145 @@ export default function StoryInterface({ storyId, currentScene = INITIAL_SCENE }
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-8">
-      {/* Story Header with Image */}
-      <div className="text-center space-y-6">
-        <h1 className="text-4xl font-bold mb-4">{story.title}</h1>
-        
-        <div className="relative">
-          {story.imageUrl && (
-            <div className="relative aspect-video rounded-lg overflow-hidden mb-6">
-              <Image 
-                src={story.imageUrl}
-                alt="Story cover"
-                fill
-                className="object-cover"
-              />
-              <button
-                onClick={() => setShowStoryImageDialog(true)}
-                className="absolute bottom-4 right-4 px-4 py-2 bg-black/50 hover:bg-black/70 rounded"
-              >
-                Edit Cover Image
-              </button>
-            </div>
-          )}
-        </div>
-
-        {showStoryImageDialog && (
-          <ImagePromptDialog
-            defaultPrompt={`Create a cover image for the story: ${story.title}`}
-            onGenerate={async (imageUrl) => {
-              // Your generate logic
-            }}
-            onSave={(imageUrl) => {
-              handleUpdateStoryImage(imageUrl);
-              setShowStoryImageDialog(false);
-            }}
-            onClose={() => setShowStoryImageDialog(false)}
-            imageUrl={story.imageUrl}
-          />
-        )}
-
-        {/* Scene Visualizer */}
-        <div className="border-t border-white/10 pt-6">
-          <h2 className="text-2xl font-semibold mb-4">Current Scene</h2>
-          <SceneVisualizer
-            narration={sceneState.narration}
-            description={sceneState.sceneDescription}
-            onImageGenerated={setCurrentSceneImage}
-            defaultPrompt={sceneImagePrompt}
-          />
-        </div>
-
-        <div className="space-y-4">
-          <div>
-            <h4 className="text-lg font-semibold text-gray-300">Narration</h4>
-            <p className="text-gray-400">{sceneState.narration}</p>
-            <AudioPreview 
-              text={sceneState.narration}
-              sceneId={sceneState.id}
-              type="narration"
-              onAudioGenerated={(url) => {
-                console.log('Audio generated:', url);
-              }}
-            />
-          </div>
-          <div>
-            <h4 className="text-lg font-semibold text-gray-300">Dialog</h4>
-            <p className="text-gray-400">{sceneState.dialog}</p>
-            <AudioPreview 
-              text={sceneState.dialog}
-              sceneId={sceneState.id}
-              type="dialog"
-              onAudioGenerated={(url) => {
-                console.log('Audio generated:', url);
-              }}
-            />
-          </div>
-          <div>
-            <h4 className="text-lg font-semibold text-gray-300">Description</h4>
-            <p className="text-gray-400">{sceneState.sceneDescription}</p>
-            <AudioPreview 
-              text={sceneState.sceneDescription}
-              sceneId={sceneState.id}
-              type="description"
-              onAudioGenerated={(url) => {
-                console.log('Audio generated:', url);
-              }}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Voice Selector */}
-      <div className="flex items-center gap-4 justify-end">
-        <select 
-          value={selectedVoice}
-          onChange={(e) => setSelectedVoice(e.target.value)}
-          className="bg-white/10 rounded p-2"
-        >
-          {availableVoices.map(voice => (
-            <option key={voice.id} value={voice.id}>
-              {voice.name}
-            </option>
-          ))}
-        </select>
-        <div className="text-sm text-gray-400">
-          Step {stepCount}/{MAX_STEPS}
-        </div>
-      </div>
-
-      {/* Main Story Area */}
-      <div className="bg-white/10 backdrop-blur-lg rounded-lg p-6">
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold mb-4">{sceneState?.dialog}</h2>
-          <div className="text-gray-300">{sceneState?.sceneDescription}</div>
-        </div>
-
-        {stepCount >= MAX_STEPS ? (
-          <div className="text-yellow-400 p-4 rounded bg-yellow-400/10">
-            You've reached the end of your journey! Thanks for playing.
-          </div>
-        ) : (
-          <>
-            {/* Voice Controls */}
-            <div className="mb-6">
-              <VoiceInput 
-                onVoiceInput={handleChoice}
-                choices={sceneState?.choices.map((c: any) => c.text) || []}
-                onChoiceSelected={handleChoice}
-                progressStory={handleChoice}
-              />
-            </div>
-
-            {/* Choice Buttons */}
-            <div className="space-y-4">
-              {sceneState?.choices.map((choice: any, index: number) => (
+    <div className="min-h-screen bg-[#FBE9D0] p-6">
+      <div className="max-w-4xl mx-auto space-y-8 bg-white rounded-2xl shadow-md border border-[#90AEAD] p-8">
+        {/* Story Header */}
+        <div className="text-center space-y-6">
+          <h1 className="text-4xl font-bold text-[#244855] mb-4">{story.title}</h1>
+          
+          {/* Story Image */}
+          <div className="relative">
+            {story.imageUrl && (
+              <div className="relative aspect-video rounded-xl overflow-hidden shadow-md border border-[#90AEAD] mb-6">
+                <Image 
+                  src={story.imageUrl}
+                  alt="Story cover"
+                  fill
+                  className="object-cover"
+                />
                 <button
-                  key={index}
-                  onClick={() => handleChoice(choice.text)}
-                  disabled={isProcessing}
-                  className="w-full text-left p-4 bg-white/5 hover:bg-white/10 rounded-lg transition-colors disabled:opacity-50 flex items-center justify-between"
+                  onClick={() => setShowStoryImageDialog(true)}
+                  className="absolute bottom-4 right-4 px-4 py-2 bg-white hover:bg-[#FBE9D0] text-[#E64833] rounded-lg shadow-sm transition-all border border-[#90AEAD]"
                 >
-                  <span>{choice.text}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-400">🗣️ Say this option</span>
-                    <span className="text-xs text-gray-500">or click</span>
-                  </div>
+                  Edit Cover Image
                 </button>
-              ))}
+              </div>
+            )}
+          </div>
+
+          {/* Current Scene Section */}
+          <div className="border-t border-[#90AEAD] pt-6">
+            <h2 className="text-2xl font-semibold text-[#244855] mb-4">Current Scene</h2>
+            
+            {/* Audio Controls */}
+            <div className="bg-[#FBE9D0]/30 rounded-xl p-6 space-y-6 border border-[#90AEAD]">
+              <div className="space-y-4">
+                {/* Narration */}
+                <div className="bg-white rounded-lg p-4 shadow-sm border border-blue-100">
+                  <h4 className="text-lg font-semibold text-blue-700">Narration</h4>
+                  <p className="text-gray-700">{sceneState.narration}</p>
+                  <AudioPreview 
+                    text={sceneState.narration}
+                    sceneId={sceneState.id}
+                    type="narration"
+                    onAudioGenerated={(url) => {
+                      console.log('Audio generated:', url);
+                    }}
+                  />
+                </div>
+
+                {/* Dialog */}
+                <div className="bg-white rounded-lg p-4 shadow-sm border border-blue-100">
+                  <h4 className="text-lg font-semibold text-blue-700">Dialog</h4>
+                  <p className="text-gray-700">{sceneState.dialog}</p>
+                  <AudioPreview 
+                    text={sceneState.dialog}
+                    sceneId={sceneState.id}
+                    type="dialog"
+                    onAudioGenerated={(url) => {
+                      console.log('Audio generated:', url);
+                    }}
+                  />
+                </div>
+              </div>
             </div>
-          </>
-        )}
-      </div>
+          </div>
+        </div>
 
-      {/* Story Controls */}
-      <div className="flex justify-between items-center">
-        <div className="flex gap-4">
-          <button
-            onClick={handleSaveScene}
-            className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded"
+        {/* Voice Controls */}
+        <div className="flex items-center gap-4 justify-end bg-blue-50 p-4 rounded-lg border border-blue-100">
+          <select 
+            value={selectedVoice}
+            onChange={(e) => setSelectedVoice(e.target.value)}
+            className="bg-white border border-blue-200 rounded-lg p-2 text-blue-700"
           >
-            Save Scene
-          </button>
-          <button
-            onClick={handleRegenerateScene}
-            className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 rounded"
-          >
-            Regenerate Scene
-          </button>
-          {stepCount > 0 && (
+            {availableVoices.map(voice => (
+              <option key={voice.id} value={voice.id}>
+                {voice.name}
+              </option>
+            ))}
+          </select>
+          <div className="text-blue-700 font-medium">
+            Step {stepCount}/{MAX_STEPS}
+          </div>
+        </div>
+
+        {/* Choices Section */}
+        <div className="bg-white rounded-xl shadow-sm border border-blue-100 p-6">
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-blue-800 mb-4">{sceneState?.dialog}</h2>
+            <div className="text-gray-600">{sceneState?.sceneDescription}</div>
+          </div>
+
+          {/* Choice Buttons */}
+          <div className="space-y-4">
+            {sceneState?.choices.map((choice: any, index: number) => (
+              <button
+                key={index}
+                onClick={() => handleChoice(choice.text)}
+                disabled={isProcessing}
+                className="w-full text-left p-4 bg-[#FBE9D0]/30 hover:bg-[#FBE9D0]/50 rounded-xl transition-colors disabled:opacity-50 flex items-center justify-between group border border-[#90AEAD]"
+              >
+                <span className="text-[#244855]">{choice.text}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-[#874F41]">🗣️ Say this option</span>
+                  <span className="text-xs text-[#874F41]/70 opacity-0 group-hover:opacity-100 transition-opacity">or click</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Story Controls */}
+        <div className="flex justify-between items-center mt-8">
+          <div className="flex gap-4">
             <button
-              onClick={() => setStepCount(MAX_STEPS)}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded"
+              onClick={handleSaveScene}
+              className="px-6 py-2 bg-[#E64833] hover:bg-[#E64833]/90 text-white rounded-lg shadow-sm transition-colors"
+              disabled={isProcessing}
             >
-              End Story
+              Save Scene
             </button>
-          )}
+            <button
+              onClick={handleRegenerateScene}
+              className="px-6 py-2 bg-[#90AEAD] hover:bg-[#90AEAD]/80 text-white rounded-lg shadow-sm transition-colors"
+              disabled={isProcessing}
+            >
+              Regenerate Scene
+            </button>
+            {stepCount > 0 && (
+              <button
+                onClick={handleEndStory}
+                className="px-6 py-2 bg-[#244855] hover:bg-[#244855]/90 text-white rounded-lg shadow-sm transition-colors"
+              >
+                End Story
+              </button>
+            )}
+          </div>
+          <div className="text-[#244855] font-medium">
+            Step {stepCount}/{MAX_STEPS}
+          </div>
         </div>
-        <div className="text-sm text-gray-400">
-          Step {stepCount}/{MAX_STEPS}
-        </div>
-      </div>
-
-      {/* Prompt Input */}
-      <div className="mt-4">
-        <textarea
-          value={sceneImagePrompt}
-          onChange={(e) => setSceneImagePrompt(e.target.value)}
-          placeholder="Customize image generation prompt (optional)"
-          className="w-full p-3 bg-white/5 rounded"
-          rows={2}
-        />
       </div>
     </div>
   )

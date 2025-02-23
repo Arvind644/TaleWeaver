@@ -69,8 +69,10 @@ export default function StoryViewer({ storyId }: { storyId: string }) {
         setShowImageDialog(false);
         setSelectedScene(null);
       }
+      return response; // Return the response object
     } catch (error) {
       console.error('Failed to update image:', error);
+      return new Response(null, { status: 500 }); // Return error response
     }
   };
 
@@ -298,21 +300,23 @@ export default function StoryViewer({ storyId }: { storyId: string }) {
             ? `Generate image for scene ${selectedScene.stepNumber}: ${selectedScene.description}`
             : `Generate cover image for story: ${story.title}`
           }
-          onGenerate={async (prompt) => {
-            // Image generation logic here
-          }}
-          onSave={() => {
-            const imageUrl = selectedScene?.imageUrl || story.imageUrl;
-            if (imageUrl) {
-              handleUpdateImage(imageUrl, selectedScene?.id);
+          onGenerate={async (imageUrl) => {
+            const response = await handleUpdateImage(imageUrl, selectedScene?.id);
+            if (response.ok) {
+              setShowImageDialog(false);
+              setSelectedScene(null);
             }
+          }}
+          onSave={(imageUrl) => {
+            handleUpdateImage(imageUrl, selectedScene?.id);
+            setShowImageDialog(false);
+            setSelectedScene(null);
           }}
           onClose={() => {
             setShowImageDialog(false);
             setSelectedScene(null);
           }}
           imageUrl={selectedScene?.imageUrl || story.imageUrl || null}
-          isGenerating={false}
         />
       )}
     </div>
