@@ -61,7 +61,7 @@ export default function AudioPreview({
         <select
           value={selectedVoice}
           onChange={(e) => setSelectedVoice(e.target.value)}
-          className="px-2 py-1 bg-gray-700 rounded text-sm"
+          className="px-2 py-1 bg-gray-200 rounded text-sm"
           disabled={isGenerating}
         >
           {VOICE_PRESETS.map(voice => (
@@ -73,7 +73,7 @@ export default function AudioPreview({
         <button
           onClick={generateAudio}
           disabled={isGenerating}
-          className="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm disabled:opacity-50"
+          className="px-3 py-1 bg-blue-400 hover:bg-blue-700 rounded text-sm disabled:opacity-50"
         >
           {isGenerating ? 'Generating...' : audioUrl ? 'Regenerate' : 'Generate'}
         </button>

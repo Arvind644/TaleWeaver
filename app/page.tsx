@@ -39,17 +39,23 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen p-8">
+    <main className="min-h-screen p-8 bg-[#FBE9D0]">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-4xl font-bold text-center mb-8">
+        <h1 className="text-4xl font-bold text-center mb-8 text-[#244855]">
           AI Interactive Story Adventure
         </h1>
         
         {!storyId ? (
           <div className="text-center">
             <button
-              onClick={() => setShowNewStoryDialog(true)}
-              className="px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg text-lg"
+              onClick={() => {
+                if (!user) {
+                  window.location.href = '/sign-in'
+                } else {
+                  setShowNewStoryDialog(true)
+                }
+              }}
+              className="px-6 py-3 bg-[#E64833] hover:bg-[#c13d2b] rounded-lg text-lg text-[#FBE9D0]"
             >
               Start New Story
             </button>
@@ -60,15 +66,15 @@ export default function Home() {
 
         {showNewStoryDialog && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-            <div className="bg-gray-800 p-6 rounded-lg w-[600px]">
-              <h3 className="text-xl mb-4">Create New Story</h3>
+            <div className="bg-[#FBE9D0] p-6 rounded-lg w-[600px] border border-[#90AEAD]">
+              <h3 className="text-xl mb-4 text-[#244855]">Create New Story</h3>
               
               <input
                 type="text"
                 value={newStoryTitle}
                 onChange={(e) => setNewStoryTitle(e.target.value)}
                 placeholder="Enter story title"
-                className="w-full p-2 mb-4 bg-gray-700 rounded"
+                className="w-full p-2 mb-4 bg-[#FBE9D0] rounded border border-[#90AEAD] text-[#244855] placeholder-[#874F41]"
               />
 
               <SceneVisualizer
@@ -80,13 +86,13 @@ export default function Home() {
               <div className="flex justify-end gap-2 mt-4">
                 <button
                   onClick={() => setShowNewStoryDialog(false)}
-                  className="px-4 py-2 bg-gray-600 rounded"
+                  className="px-4 py-2 bg-[#90AEAD] hover:bg-[#7a9291] rounded text-[#FBE9D0]"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleCreateStory}
-                  className="px-4 py-2 bg-green-600 rounded"
+                  className="px-4 py-2 bg-[#E64833] hover:bg-[#c13d2b] rounded text-[#FBE9D0]"
                   disabled={!newStoryTitle.trim()}
                 >
                   Create Story

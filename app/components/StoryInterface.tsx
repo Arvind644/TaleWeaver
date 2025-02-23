@@ -9,7 +9,6 @@ import SceneVisualizer from './SceneVisualizer';
 import Image from 'next/image';
 import ImagePromptDialog from './ImagePromptDialog';
 import AudioPreview from './AudioPreview';
-import { useRouter } from 'next/navigation'
 
 interface Scene {
   id: string;
@@ -67,7 +66,6 @@ export default function StoryInterface({ storyId, currentScene = INITIAL_SCENE }
   const [sceneImagePrompt, setSceneImagePrompt] = useState<string>('');
   const [story, setStory] = useState<{ title: string; imageUrl: string | null }>({ title: '', imageUrl: null });
   const [showStoryImageDialog, setShowStoryImageDialog] = useState(false);
-  const router = useRouter()
 
   const [voiceService] = useState(() => new VoiceService({
     apiKey: process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || '',
@@ -130,7 +128,7 @@ export default function StoryInterface({ storyId, currentScene = INITIAL_SCENE }
       if (chosenOption) {
         await voiceService.synthesizeSpeech(
           `You chose: ${chosenOption.text}`, 
-          selectedVoice
+          selectedVoice // Use selected voice
         )
 
         setStepCount(prev => prev + 1)
@@ -218,14 +216,6 @@ export default function StoryInterface({ storyId, currentScene = INITIAL_SCENE }
     }
   };
 
-  const handleEndStory = () => {
-    setStepCount(MAX_STEPS);
-    // Add a small delay before redirecting to ensure state is updated
-    setTimeout(() => {
-      router.push('/dashboard');
-    }, 500);
-  };
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -263,13 +253,13 @@ export default function StoryInterface({ storyId, currentScene = INITIAL_SCENE }
 
           {/* Current Scene Section */}
           <div className="border-t border-[#90AEAD] pt-6">
-            <h2 className="text-2xl font-semibold text-[#244855] mb-4">Current Scene</h2>
+            {/* <h2 className="text-2xl font-semibold text-[#244855] mb-4">Current Scene</h2> */}
             
             {/* Audio Controls */}
             <div className="bg-[#FBE9D0]/30 rounded-xl p-6 space-y-6 border border-[#90AEAD]">
               <div className="space-y-4">
                 {/* Narration */}
-                <div className="bg-white rounded-lg p-4 shadow-sm border border-blue-100">
+                {/* <div className="bg-white rounded-lg p-4 shadow-sm border border-blue-100">
                   <h4 className="text-lg font-semibold text-blue-700">Narration</h4>
                   <p className="text-gray-700">{sceneState.narration}</p>
                   <AudioPreview 
@@ -280,10 +270,10 @@ export default function StoryInterface({ storyId, currentScene = INITIAL_SCENE }
                       console.log('Audio generated:', url);
                     }}
                   />
-                </div>
+                </div> */}
 
                 {/* Dialog */}
-                <div className="bg-white rounded-lg p-4 shadow-sm border border-blue-100">
+                {/* <div className="bg-white rounded-lg p-4 shadow-sm border border-blue-100">
                   <h4 className="text-lg font-semibold text-blue-700">Dialog</h4>
                   <p className="text-gray-700">{sceneState.dialog}</p>
                   <AudioPreview 
@@ -294,7 +284,7 @@ export default function StoryInterface({ storyId, currentScene = INITIAL_SCENE }
                       console.log('Audio generated:', url);
                     }}
                   />
-                </div>
+                </div> */}
               </div>
             </div>
           </div>
@@ -345,33 +335,20 @@ export default function StoryInterface({ storyId, currentScene = INITIAL_SCENE }
         </div>
 
         {/* Story Controls */}
-        <div className="flex justify-between items-center mt-8">
+        <div className="flex justify-between items-center bg-blue-50 p-4 rounded-xl border border-blue-100">
           <div className="flex gap-4">
             <button
               onClick={handleSaveScene}
               className="px-6 py-2 bg-[#E64833] hover:bg-[#E64833]/90 text-white rounded-lg shadow-sm transition-colors"
-              disabled={isProcessing}
             >
               Save Scene
             </button>
             <button
               onClick={handleRegenerateScene}
-              className="px-6 py-2 bg-[#90AEAD] hover:bg-[#90AEAD]/80 text-white rounded-lg shadow-sm transition-colors"
-              disabled={isProcessing}
+              className="px-6 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg shadow-sm transition-colors"
             >
               Regenerate Scene
             </button>
-            {stepCount > 0 && (
-              <button
-                onClick={handleEndStory}
-                className="px-6 py-2 bg-[#244855] hover:bg-[#244855]/90 text-white rounded-lg shadow-sm transition-colors"
-              >
-                End Story
-              </button>
-            )}
-          </div>
-          <div className="text-[#244855] font-medium">
-            Step {stepCount}/{MAX_STEPS}
           </div>
         </div>
       </div>
