@@ -3,7 +3,7 @@ export interface VoicePreset {
   name: string
 }
 
-export const VOICE_PRESETS: VoicePreset[] = [
+export const VOICE_PRESETS = [
   {
     id: '21m00Tcm4TlvDq8ikWAM',
     name: 'Rachel - Main Narrator'
@@ -15,5 +15,9 @@ export const VOICE_PRESETS: VoicePreset[] = [
   {
     id: 'EXAVITQu4vr4xnSDxMaL',
     name: 'Bella - Wise Elder'
+  },
+  {
+    id: 'VR6AewLTigWG4xSOukaG',
+    name: 'Adam - Mysterious'
   }
-] 
+]; 

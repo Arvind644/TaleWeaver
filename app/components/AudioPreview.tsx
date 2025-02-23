@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import { VOICE_PRESETS } from '@/lib/voice-presets'
 
 interface AudioPreviewProps {
   text: string;
@@ -20,6 +21,7 @@ export default function AudioPreview({
   const [audioUrl, setAudioUrl] = useState<string | null>(existingAudioUrl || null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedVoice, setSelectedVoice] = useState(VOICE_PRESETS[0].id);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   const generateAudio = async () => {
@@ -29,7 +31,12 @@ export default function AudioPreview({
       const response = await fetch('/api/audio/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, sceneId, type }),
+        body: JSON.stringify({ 
+          text, 
+          sceneId, 
+          type,
+          voiceId: selectedVoice 
+        }),
       });
 
       if (!response.ok) {
@@ -50,23 +57,37 @@ export default function AudioPreview({
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2">
+        <select
+          value={selectedVoice}
+          onChange={(e) => setSelectedVoice(e.target.value)}
+          className="px-2 py-1 bg-gray-700 rounded text-sm"
+          disabled={isGenerating}
+        >
+          {VOICE_PRESETS.map(voice => (
+            <option key={voice.id} value={voice.id}>
+              {voice.name}
+            </option>
+          ))}
+        </select>
         <button
           onClick={generateAudio}
           disabled={isGenerating}
           className="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm disabled:opacity-50"
         >
-          {isGenerating ? 'Generating...' : audioUrl ? 'Regenerate Audio' : 'Generate Audio'}
+          {isGenerating ? 'Generating...' : audioUrl ? 'Regenerate' : 'Generate'}
         </button>
-        {audioUrl && (
-          <audio
-            ref={audioRef}
-            controls
-            src={audioUrl}
-            className="max-w-[200px]"
-          />
-        )}
       </div>
+      
+      {audioUrl && (
+        <audio
+          ref={audioRef}
+          controls
+          src={audioUrl}
+          className="max-w-[200px]"
+        />
+      )}
+      
       {error && (
         <div className="text-red-500 text-sm">{error}</div>
       )}

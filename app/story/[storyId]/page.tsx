@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import ImagePromptDialog from '@/app/components/ImagePromptDialog'
 import AudioPreview from '@/app/components/AudioPreview'
+import VoiceSelectionDialog from '@/app/components/VoiceSelectionDialog'
 
 interface Scene {
   id: string;
@@ -26,6 +27,12 @@ interface Story {
   scenes: Scene[];
 }
 
+const DEFAULT_VOICES = {
+  narration: '21m00Tcm4TlvDq8ikWAM', // Rachel
+  dialog: 'AZnzlk1XvdvUeBnXmlld',    // Domi
+  description: 'EXAVITQu4vr4xnSDxMaL' // Bella
+};
+
 export default function StoryPage() {
   const { storyId } = useParams()
   const router = useRouter()
@@ -35,6 +42,8 @@ export default function StoryPage() {
   const [selectedScene, setSelectedScene] = useState<Scene | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [editingScene, setEditingScene] = useState<Scene | null>(null)
+  const [showVoiceDialog, setShowVoiceDialog] = useState(false)
+  const [selectedSceneForVoices, setSelectedSceneForVoices] = useState<Scene | null>(null)
 
   useEffect(() => {
     fetchStory();
@@ -125,7 +134,11 @@ export default function StoryPage() {
     }
   };
 
-  const handleGenerateAllAudio = async (scene: Scene) => {
+  const handleGenerateAllAudio = async (scene: Scene, voices: {
+    narration: string;
+    dialog: string;
+    description: string;
+  }) => {
     setIsGenerating(true);
     try {
       const types: ('narration' | 'dialog' | 'description')[] = ['narration', 'dialog', 'description'];
@@ -138,7 +151,8 @@ export default function StoryPage() {
           body: JSON.stringify({
             text,
             sceneId: scene.id,
-            type
+            type,
+            voiceId: voices[type]
           }),
         });
         
@@ -153,6 +167,8 @@ export default function StoryPage() {
       console.error('Failed to generate audio:', error);
     } finally {
       setIsGenerating(false);
+      setShowVoiceDialog(false);
+      setSelectedSceneForVoices(null);
     }
   };
 
@@ -254,11 +270,14 @@ export default function StoryPage() {
                   <h3 className="text-2xl font-bold">Scene {scene.stepNumber}</h3>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => handleGenerateAllAudio(scene)}
+                      onClick={() => {
+                        setSelectedSceneForVoices(scene);
+                        setShowVoiceDialog(true);
+                      }}
                       className="px-3 py-1 bg-green-600 hover:bg-green-700 rounded text-sm"
                       disabled={isGenerating}
                     >
-                      {isGenerating ? 'Generating...' : 'Generate All Audio'}
+                      Generate All Audio
                     </button>
                     <button
                       onClick={() => setEditingScene(scene)}
@@ -405,6 +424,17 @@ export default function StoryPage() {
             setSelectedScene(null);
           }}
           imageUrl={selectedScene?.imageUrl || story.imageUrl || null}
+          isGenerating={isGenerating}
+        />
+      )}
+
+      {showVoiceDialog && selectedSceneForVoices && (
+        <VoiceSelectionDialog
+          onGenerate={(voices) => handleGenerateAllAudio(selectedSceneForVoices, voices)}
+          onClose={() => {
+            setShowVoiceDialog(false);
+            setSelectedSceneForVoices(null);
+          }}
           isGenerating={isGenerating}
         />
       )}
