@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import ImagePromptDialog from '@/app/components/ImagePromptDialog'
+import AudioPreview from '@/app/components/AudioPreview'
 
 interface Scene {
   id: string;
@@ -13,6 +14,9 @@ interface Scene {
   description: string;
   imageUrl?: string;
   choices: any;
+  narrationAudioUrl?: string;
+  dialogAudioUrl?: string;
+  descriptionAudioUrl?: string;
 }
 
 interface Story {
@@ -100,6 +104,55 @@ export default function StoryPage() {
       }
     } catch (error) {
       console.error('Failed to delete scene:', error);
+    }
+  };
+
+  const handleAudioGenerated = async (sceneId: string, type: 'narration' | 'dialog' | 'description', audioUrl: string) => {
+    try {
+      const response = await fetch(`/api/stories/${storyId}/scenes/${sceneId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          [`${type}AudioUrl`]: audioUrl
+        })
+      });
+
+      if (response.ok) {
+        fetchStory(); // Refresh story data
+      }
+    } catch (error) {
+      console.error('Failed to update scene audio:', error);
+    }
+  };
+
+  const handleGenerateAllAudio = async (scene: Scene) => {
+    setIsGenerating(true);
+    try {
+      const types: ('narration' | 'dialog' | 'description')[] = ['narration', 'dialog', 'description'];
+      
+      for (const type of types) {
+        const text = scene[type];
+        const response = await fetch('/api/audio/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text,
+            sceneId: scene.id,
+            type
+          }),
+        });
+        
+        if (response.ok) {
+          const { audioUrl } = await response.json();
+          await handleAudioGenerated(scene.id, type, audioUrl);
+        }
+      }
+
+      await fetchStory();
+    } catch (error) {
+      console.error('Failed to generate audio:', error);
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -201,6 +254,13 @@ export default function StoryPage() {
                   <h3 className="text-2xl font-bold">Scene {scene.stepNumber}</h3>
                   <div className="flex gap-2">
                     <button
+                      onClick={() => handleGenerateAllAudio(scene)}
+                      className="px-3 py-1 bg-green-600 hover:bg-green-700 rounded text-sm"
+                      disabled={isGenerating}
+                    >
+                      {isGenerating ? 'Generating...' : 'Generate All Audio'}
+                    </button>
+                    <button
                       onClick={() => setEditingScene(scene)}
                       className="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm"
                     >
@@ -261,21 +321,51 @@ export default function StoryPage() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <div>
-                      <h4 className="text-lg font-semibold text-gray-300">Narration</h4>
-                      <p className="text-gray-400">{scene.narration}</p>
+                    <div className="bg-gray-700/50 p-4 rounded">
+                      <div className="flex justify-between items-center mb-2">
+                        <h4 className="text-lg font-semibold">Narration</h4>
+                        <AudioPreview
+                          text={scene.narration}
+                          sceneId={scene.id}
+                          type="narration"
+                          existingAudioUrl={scene.narrationAudioUrl}
+                          onAudioGenerated={(url) => handleAudioGenerated(scene.id, 'narration', url)}
+                        />
+                      </div>
+                      <p className="text-gray-300">{scene.narration}</p>
                     </div>
-                    <div>
-                      <h4 className="text-lg font-semibold text-gray-300">Dialog</h4>
-                      <p className="text-gray-400">{scene.dialog}</p>
+
+                    <div className="bg-gray-700/50 p-4 rounded">
+                      <div className="flex justify-between items-center mb-2">
+                        <h4 className="text-lg font-semibold">Dialog</h4>
+                        <AudioPreview
+                          text={scene.dialog}
+                          sceneId={scene.id}
+                          type="dialog"
+                          existingAudioUrl={scene.dialogAudioUrl}
+                          onAudioGenerated={(url) => handleAudioGenerated(scene.id, 'dialog', url)}
+                        />
+                      </div>
+                      <p className="text-gray-300">{scene.dialog}</p>
                     </div>
-                    <div>
-                      <h4 className="text-lg font-semibold text-gray-300">Description</h4>
-                      <p className="text-gray-400">{scene.description}</p>
+
+                    <div className="bg-gray-700/50 p-4 rounded">
+                      <div className="flex justify-between items-center mb-2">
+                        <h4 className="text-lg font-semibold">Description</h4>
+                        <AudioPreview
+                          text={scene.description}
+                          sceneId={scene.id}
+                          type="description"
+                          existingAudioUrl={scene.descriptionAudioUrl}
+                          onAudioGenerated={(url) => handleAudioGenerated(scene.id, 'description', url)}
+                        />
+                      </div>
+                      <p className="text-gray-300">{scene.description}</p>
                     </div>
-                    <div>
-                      <h4 className="text-lg font-semibold text-gray-300">Choices</h4>
-                      <ul className="list-disc list-inside text-gray-400">
+
+                    <div className="bg-gray-700/50 p-4 rounded">
+                      <h4 className="text-lg font-semibold mb-2">Choices</h4>
+                      <ul className="list-disc list-inside text-gray-300">
                         {JSON.parse(scene.choices).map((choice: any, index: number) => (
                           <li key={index}>{choice.text}</li>
                         ))}

@@ -8,6 +8,7 @@ import { useUser } from "@clerk/nextjs";
 import SceneVisualizer from './SceneVisualizer';
 import Image from 'next/image';
 import ImagePromptDialog from './ImagePromptDialog';
+import AudioPreview from './AudioPreview';
 
 const INITIAL_SCENE = {
   narration: "Welcome to an enchanted realm where magic and mystery intertwine.",
@@ -258,6 +259,24 @@ export default function StoryInterface({ storyId }: StoryInterfaceProps) {
             onImageGenerated={setCurrentSceneImage}
             defaultPrompt={sceneImagePrompt}
           />
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <h4 className="text-lg font-semibold text-gray-300">Narration</h4>
+            <p className="text-gray-400">{currentScene.narration}</p>
+            <AudioPreview text={currentScene.narration} />
+          </div>
+          <div>
+            <h4 className="text-lg font-semibold text-gray-300">Dialog</h4>
+            <p className="text-gray-400">{currentScene.dialog}</p>
+            <AudioPreview text={currentScene.dialog} />
+          </div>
+          <div>
+            <h4 className="text-lg font-semibold text-gray-300">Description</h4>
+            <p className="text-gray-400">{currentScene.sceneDescription}</p>
+            <AudioPreview text={currentScene.sceneDescription} />
+          </div>
         </div>
       </div>
 
