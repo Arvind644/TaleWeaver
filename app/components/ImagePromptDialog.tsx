@@ -1,14 +1,14 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 
 interface ImagePromptDialogProps {
   defaultPrompt: string;
-  onGenerate: (imageUrl: string) => Promise<void>;
-  onSave: () => void;
+  onGenerate?: (imageUrl: string) => Promise<void>;
+  onSave: (imageUrl: string) => void;
   onClose: () => void;
   imageUrl: string | null;
-  isGenerating: boolean;
 }
 
 export default function ImagePromptDialog({
@@ -16,14 +16,20 @@ export default function ImagePromptDialog({
   onGenerate,
   onSave,
   onClose,
-  imageUrl,
-  isGenerating
+  imageUrl
 }: ImagePromptDialogProps) {
   const [prompt, setPrompt] = useState(defaultPrompt);
   const [localImageUrl, setLocalImageUrl] = useState<string | null>(imageUrl);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleGenerate = async () => {
+    if (isGenerating) return;
+    
     try {
+      setIsGenerating(true);
+      setLocalImageUrl(null); // Clear previous image
+      
       const response = await fetch('/api/images/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -34,9 +40,24 @@ export default function ImagePromptDialog({
       
       const data = await response.json();
       setLocalImageUrl(data.imageUrl);
-      await onGenerate(data.imageUrl);
+      // Don't call onGenerate here anymore
     } catch (error) {
       console.error('Failed to generate image:', error);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!localImageUrl || isSaving) return;
+    setIsSaving(true);
+    try {
+      onSave(localImageUrl);
+      onClose();
+    } catch (error) {
+      console.error('Failed to save image:', error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -52,15 +73,17 @@ export default function ImagePromptDialog({
             className="w-full p-3 bg-gray-700 rounded"
             rows={3}
             placeholder="Describe the image you want to generate..."
+            disabled={isGenerating}
           />
         </div>
 
         {localImageUrl && (
           <div className="mb-4 relative aspect-video">
-            <img 
-              src={localImageUrl} 
+            <Image
+              src={localImageUrl}
               alt="Generated scene"
-              className="w-full h-full object-cover rounded"
+              fill
+              className="object-cover rounded"
             />
           </div>
         )}
@@ -69,22 +92,24 @@ export default function ImagePromptDialog({
           <button
             onClick={onClose}
             className="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded"
+            disabled={isGenerating || isSaving}
           >
             Cancel
           </button>
           <button
             onClick={handleGenerate}
-            disabled={isGenerating}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded disabled:opacity-50"
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded"
+            disabled={isGenerating || isSaving}
           >
             {isGenerating ? 'Generating...' : 'Generate'}
           </button>
-          {localImageUrl && (
+          {localImageUrl && !isGenerating && (
             <button
-              onClick={onSave}
+              onClick={handleSave}
               className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded"
+              disabled={isGenerating || isSaving}
             >
-              Save Image
+              {isSaving ? 'Saving...' : 'Save Image'}
             </button>
           )}
         </div>

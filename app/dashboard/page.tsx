@@ -320,25 +320,16 @@ export default function Dashboard() {
       {/* Image Edit Dialog */}
       {showImageDialog && editingStory && (
         <ImagePromptDialog
-          defaultPrompt={`Create a cover image for story: ${editingStory.title}`}
-          onGenerate={async (imageUrl) => {
-            setIsGenerating(true);
-            try {
-              await handleUpdateStoryImage(editingStory.id, imageUrl);
-            } finally {
-              setIsGenerating(false);
-            }
+          defaultPrompt={`Create a cover image for the story: ${editingStory.title}`}
+          onGenerate={async () => {
+            // Do nothing here, let ImagePromptDialog handle the state
           }}
-          onSave={() => {
+          onSave={(imageUrl) => {
+            handleUpdateStoryImage(editingStory.id, imageUrl);
             setShowImageDialog(false);
-            setEditingStory(null);
           }}
-          onClose={() => {
-            setShowImageDialog(false);
-            setEditingStory(null);
-          }}
+          onClose={() => setShowImageDialog(false)}
           imageUrl={editingStory.imageUrl || null}
-          isGenerating={isGenerating}
         />
       )}
     </div>

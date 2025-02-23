@@ -10,7 +10,20 @@ import Image from 'next/image';
 import ImagePromptDialog from './ImagePromptDialog';
 import AudioPreview from './AudioPreview';
 
-const INITIAL_SCENE = {
+interface Scene {
+  id: string;
+  narration: string;
+  dialog: string;
+  sceneDescription: string;
+  choices: {
+    text: string;
+    consequence: string;
+    voiceId: string;
+  }[];
+}
+
+const INITIAL_SCENE: Scene = {
+  id: 'initial',
   narration: "Welcome to an enchanted realm where magic and mystery intertwine.",
   dialog: "Welcome to your adventure! What would you like to do?",
   sceneDescription: "You stand at the beginning of your journey, where multiple paths await your choice.",
@@ -37,10 +50,11 @@ const MAX_STEPS = 10 // Maximum story steps
 
 interface StoryInterfaceProps {
   storyId: string;
+  currentScene?: Scene;  // Make optional
 }
 
-export default function StoryInterface({ storyId }: StoryInterfaceProps) {
-  const [currentScene, setCurrentScene] = useState(INITIAL_SCENE)
+export default function StoryInterface({ storyId, currentScene = INITIAL_SCENE }: StoryInterfaceProps) {
+  const [sceneState, setSceneState] = useState(currentScene)
   const [isProcessing, setIsProcessing] = useState(false)
   const [previousChoices, setPreviousChoices] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -107,7 +121,7 @@ export default function StoryInterface({ storyId }: StoryInterfaceProps) {
     setIsProcessing(true)
 
     try {
-      const chosenOption = currentScene.choices.find(
+      const chosenOption = sceneState.choices.find(
         (c: any) => c.text.toLowerCase() === choice.toLowerCase()
       )
 
@@ -121,7 +135,7 @@ export default function StoryInterface({ storyId }: StoryInterfaceProps) {
         // Now let AI generate the next scene
         const nextScene = await storyService.generateNextScene({
           currentScene: chosenOption.text,
-          playerChoices: currentScene.choices.map((c: any) => c.text),
+          playerChoices: sceneState.choices.map((c: any) => c.text),
           previousChoices: [...previousChoices, chosenOption.text]
         })
 
@@ -132,7 +146,7 @@ export default function StoryInterface({ storyId }: StoryInterfaceProps) {
         )
 
         setPreviousChoices(prev => [...prev, chosenOption.text])
-        setCurrentScene(nextScene)
+        setSceneState(nextScene)
       }
     } catch (error) {
       console.error('Failed to process choice:', error)
@@ -152,10 +166,10 @@ export default function StoryInterface({ storyId }: StoryInterfaceProps) {
           storyId,
           scene: {
             stepNumber: stepCount,
-            narration: currentScene.narration,
-            dialog: currentScene.dialog,
-            description: currentScene.sceneDescription,
-            choices: JSON.stringify(currentScene.choices),
+            narration: sceneState.narration,
+            dialog: sceneState.dialog,
+            description: sceneState.sceneDescription,
+            choices: JSON.stringify(sceneState.choices),
             imageUrl: currentSceneImage
           }
         })
@@ -173,11 +187,11 @@ export default function StoryInterface({ storyId }: StoryInterfaceProps) {
     setIsProcessing(true);
     try {
       const nextScene = await storyService.generateNextScene({
-        currentScene: currentScene.dialog,
-        playerChoices: currentScene.choices.map((c: any) => c.text),
+        currentScene: sceneState.dialog,
+        playerChoices: sceneState.choices.map((c: any) => c.text),
         previousChoices
       });
-      setCurrentScene(nextScene);
+      setSceneState(nextScene);
     } catch (error) {
       console.error('Failed to regenerate scene:', error);
     } finally {
@@ -195,6 +209,7 @@ export default function StoryInterface({ storyId }: StoryInterfaceProps) {
 
       if (response.ok) {
         setStory(prev => ({ ...prev, imageUrl }));
+        setShowStoryImageDialog(false);
       }
     } catch (error) {
       console.error('Failed to update story image:', error);
@@ -237,16 +252,15 @@ export default function StoryInterface({ storyId }: StoryInterfaceProps) {
         {showStoryImageDialog && (
           <ImagePromptDialog
             defaultPrompt={`Create a cover image for the story: ${story.title}`}
-            onGenerate={async (prompt) => {
-              // Generate image logic
+            onGenerate={async (imageUrl) => {
+              // Your generate logic
             }}
-            onSave={() => {
-              handleUpdateStoryImage(story.imageUrl!);
+            onSave={(imageUrl) => {
+              handleUpdateStoryImage(imageUrl);
               setShowStoryImageDialog(false);
             }}
             onClose={() => setShowStoryImageDialog(false)}
             imageUrl={story.imageUrl}
-            isGenerating={false}
           />
         )}
 
@@ -254,8 +268,8 @@ export default function StoryInterface({ storyId }: StoryInterfaceProps) {
         <div className="border-t border-white/10 pt-6">
           <h2 className="text-2xl font-semibold mb-4">Current Scene</h2>
           <SceneVisualizer
-            narration={currentScene.narration}
-            description={currentScene.sceneDescription}
+            narration={sceneState.narration}
+            description={sceneState.sceneDescription}
             onImageGenerated={setCurrentSceneImage}
             defaultPrompt={sceneImagePrompt}
           />
@@ -264,18 +278,39 @@ export default function StoryInterface({ storyId }: StoryInterfaceProps) {
         <div className="space-y-4">
           <div>
             <h4 className="text-lg font-semibold text-gray-300">Narration</h4>
-            <p className="text-gray-400">{currentScene.narration}</p>
-            <AudioPreview text={currentScene.narration} />
+            <p className="text-gray-400">{sceneState.narration}</p>
+            <AudioPreview 
+              text={sceneState.narration}
+              sceneId={sceneState.id}
+              type="narration"
+              onAudioGenerated={(url) => {
+                console.log('Audio generated:', url);
+              }}
+            />
           </div>
           <div>
             <h4 className="text-lg font-semibold text-gray-300">Dialog</h4>
-            <p className="text-gray-400">{currentScene.dialog}</p>
-            <AudioPreview text={currentScene.dialog} />
+            <p className="text-gray-400">{sceneState.dialog}</p>
+            <AudioPreview 
+              text={sceneState.dialog}
+              sceneId={sceneState.id}
+              type="dialog"
+              onAudioGenerated={(url) => {
+                console.log('Audio generated:', url);
+              }}
+            />
           </div>
           <div>
             <h4 className="text-lg font-semibold text-gray-300">Description</h4>
-            <p className="text-gray-400">{currentScene.sceneDescription}</p>
-            <AudioPreview text={currentScene.sceneDescription} />
+            <p className="text-gray-400">{sceneState.sceneDescription}</p>
+            <AudioPreview 
+              text={sceneState.sceneDescription}
+              sceneId={sceneState.id}
+              type="description"
+              onAudioGenerated={(url) => {
+                console.log('Audio generated:', url);
+              }}
+            />
           </div>
         </div>
       </div>
@@ -301,8 +336,8 @@ export default function StoryInterface({ storyId }: StoryInterfaceProps) {
       {/* Main Story Area */}
       <div className="bg-white/10 backdrop-blur-lg rounded-lg p-6">
         <div className="mb-6">
-          <h2 className="text-2xl font-bold mb-4">{currentScene?.dialog}</h2>
-          <div className="text-gray-300">{currentScene?.sceneDescription}</div>
+          <h2 className="text-2xl font-bold mb-4">{sceneState?.dialog}</h2>
+          <div className="text-gray-300">{sceneState?.sceneDescription}</div>
         </div>
 
         {stepCount >= MAX_STEPS ? (
@@ -315,7 +350,7 @@ export default function StoryInterface({ storyId }: StoryInterfaceProps) {
             <div className="mb-6">
               <VoiceInput 
                 onVoiceInput={handleChoice}
-                choices={currentScene?.choices.map((c: any) => c.text) || []}
+                choices={sceneState?.choices.map((c: any) => c.text) || []}
                 onChoiceSelected={handleChoice}
                 progressStory={handleChoice}
               />
@@ -323,7 +358,7 @@ export default function StoryInterface({ storyId }: StoryInterfaceProps) {
 
             {/* Choice Buttons */}
             <div className="space-y-4">
-              {currentScene?.choices.map((choice: any, index: number) => (
+              {sceneState?.choices.map((choice: any, index: number) => (
                 <button
                   key={index}
                   onClick={() => handleChoice(choice.text)}
