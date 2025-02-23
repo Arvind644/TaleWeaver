@@ -30,9 +30,9 @@ export default function Header() {
                 Dashboard
               </Link>
               <Link 
-                href="/create" 
+                href="/" 
                 className={`text-[#FBE9D0] hover:text-white transition-colors ${
-                  pathname === '/create' ? 'font-bold' : ''
+                  pathname === '/' ? 'font-bold' : ''
                 }`}
               >
                 Create Story
