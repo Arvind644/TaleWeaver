@@ -11,6 +11,11 @@ TaleWeaver is an interactive storytelling platform that combines AI-powered narr
 - **Real-time Editing**: Edit and update your story scenes on the fly
 - **Immersive Playback**: Experience stories with synchronized audio, visuals, and captions
 
+## Demo Story
+
+Check out our example interactive story:
+[The Enchanted Forest Adventure](https://taleweaver123.vercel.app/story/cm7hy6hm90000kz0361ewggyq/play)
+
 ## Tech Stack
 
 - Next.js 14 (App Router)
